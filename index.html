@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#6d38c7" />
+  <title>Adivina mi número</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main class="app-shell">
+    <section id="homeScreen" class="screen active">
+      <div class="sparkles" aria-hidden="true"></div>
+      <div class="hero-card">
+        <p class="eyebrow">Juego mental</p>
+        <h1>Adivina<br><span>mi número</span></h1>
+        <p class="subtitle">Piensa un número del <strong>1 al 31</strong> y yo lo adivinaré con solo 5 preguntas.</p>
+        <div class="magic-hat" aria-hidden="true">
+          <div class="floating-card card-a">13</div>
+          <div class="floating-card card-b">7</div>
+          <div class="floating-card card-c">21</div>
+          <div class="hat-top"></div>
+          <div class="hat-base"></div>
+          <div class="glow"></div>
+        </div>
+        <button class="primary-button" id="startBtn">Comenzar <span>→</span></button>
+        <button class="secondary-button" id="howBtn">¿Cómo funciona?</button>
+      </div>
+    </section>
+
+    <section id="gameScreen" class="screen">
+      <div class="topbar">
+        <button class="icon-button" id="backHomeBtn" aria-label="Volver">←</button>
+        <div class="step-pill" id="stepPill">Tarjeta 1 de 5</div>
+        <button class="icon-button ghost" id="resetBtn" aria-label="Reiniciar">↻</button>
+      </div>
+      <div class="question-block">
+        <p class="eyebrow">Mira con atención</p>
+        <h2>¿Tu número<br>está aquí?</h2>
+      </div>
+      <div class="number-card" id="numberCard" aria-live="polite"></div>
+      <div class="answer-actions">
+        <button class="yes-button" id="yesBtn">✓ Sí</button>
+        <button class="no-button" id="noBtn">✕ No</button>
+      </div>
+      <div class="progress-dots" id="progressDots"></div>
+    </section>
+
+    <section id="resultScreen" class="screen">
+      <div class="confetti" aria-hidden="true"></div>
+      <div class="result-card">
+        <p class="eyebrow">Resultado</p>
+        <h2>¡Ya lo sé!</h2>
+        <p class="result-copy">Estás pensando en el número</p>
+        <div class="result-number" id="resultNumber">7</div>
+        <div class="magician" aria-hidden="true">
+          <div class="head"></div>
+          <div class="body"></div>
+          <div class="wand"></div>
+          <div class="mini-hat"></div>
+        </div>
+        <button class="primary-button" id="playAgainBtn">↻ Jugar otra vez</button>
+        <button class="secondary-button" id="explainBtn">Ver explicación</button>
+      </div>
+    </section>
+
+    <section id="explainScreen" class="screen">
+      <div class="topbar">
+        <button class="icon-button" id="backFromExplainBtn" aria-label="Volver">←</button>
+        <div class="step-pill">Explicación</div>
+        <span class="topbar-spacer"></span>
+      </div>
+      <article class="explain-panel">
+        <h2>¿Cómo funciona?</h2>
+        <p>El juego usa tarjetas especiales basadas en potencias de 2.</p>
+        <div class="logic-list">
+          <div><strong>Tarjeta 1</strong><span>vale 1</span></div>
+          <div><strong>Tarjeta 2</strong><span>vale 2</span></div>
+          <div><strong>Tarjeta 3</strong><span>vale 4</span></div>
+          <div><strong>Tarjeta 4</strong><span>vale 8</span></div>
+          <div><strong>Tarjeta 5</strong><span>vale 16</span></div>
+        </div>
+        <p>Cada vez que respondes <strong>Sí</strong>, la app suma el valor de esa tarjeta. Al final, la suma revela tu número.</p>
+        <p class="example"><strong>Ejemplo:</strong> si dices Sí en las tarjetas 1, 2 y 3, la suma es 1 + 2 + 4 = 7.</p>
+        <button class="primary-button" id="explainPlayBtn">Jugar ahora</button>
+      </article>
+    </section>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>

@@ -1,0 +1,16 @@
+{
+  "name": "Adivina mi número",
+  "short_name": "Adivina",
+  "description": "Juego para adivinar números del 1 al 31 con tarjetas binarias.",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#fff7e6",
+  "theme_color": "#6d38c7",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}
