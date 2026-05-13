@@ -1,20 +1,15 @@
-Adivina mi número
+TeLoAdivino v2
 
-App web simple/PWA para jugar a adivinar un número del 1 al 31 usando tarjetas binarias.
+Modos incluidos:
+- Adivina mi número: número del 1 al 31.
+- Adivina mi cumpleaños: día del 1 al 31 y mes del 1 al 12.
+- Adivina mi símbolo: 16 figuras secretas.
 
-Cómo abrir:
-1. Descomprime el ZIP.
-2. Abre index.html en el navegador.
-
-Archivos incluidos:
-- index.html
-- styles.css
-- script.js
-- manifest.json
-- service-worker.js
-- icon.svg
-
-Para subir a Vercel:
-1. Sube la carpeta completa a un repositorio de GitHub.
-2. Conecta el repositorio con Vercel.
-3. Como es una app estática, no requiere comandos de build.
+Para actualizar tu proyecto:
+1. Copia estos archivos en C:\Users\caure\Desktop\Paginas\TeLoAdivino
+2. Reemplaza los archivos anteriores.
+3. Ejecuta:
+   git add .
+   git commit -m "Agregar modos cumpleaños y símbolos"
+   git push
+4. Vercel publicará la nueva versión automáticamente si el proyecto ya está conectado.

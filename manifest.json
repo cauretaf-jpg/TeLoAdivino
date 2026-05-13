@@ -1,7 +1,7 @@
 {
-  "name": "Adivina mi número",
-  "short_name": "Adivina",
-  "description": "Juego para adivinar números del 1 al 31 con tarjetas binarias.",
+  "name": "TeLoAdivino",
+  "short_name": "TeLoAdivino",
+  "description": "Juegos de adivinanza con números, cumpleaños y símbolos.",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#fff7e6",
