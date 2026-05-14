@@ -1,4 +1,4 @@
-const CACHE_NAME = 'teloadivino-v3';
+const CACHE_NAME = 'teloadivino-v3-1';
 const ASSETS = ['./', './index.html', './styles.css', './script.js', './manifest.json', './icon.svg'];
 
 self.addEventListener('install', event => {

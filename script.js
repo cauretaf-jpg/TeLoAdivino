@@ -59,16 +59,18 @@ const modes = {
 
 const compatibilityQuestions = [
   {
-    question: '¿Qué plan prefieres?',
+    question: '¿Qué plan prefieres para una primera salida?',
+    weight: 8,
     options: [
       { text: 'Café tranquilo', vibe: 'calma' },
-      { text: 'Cine y cabritas', vibe: 'ternura' },
+      { text: 'Cine y algo rico', vibe: 'ternura' },
       { text: 'Paseo nocturno', vibe: 'misterio' },
       { text: 'Salida espontánea', vibe: 'aventura' }
     ]
   },
   {
     question: '¿Qué te conquista más?',
+    weight: 12,
     options: [
       { text: 'Que me haga reír', vibe: 'humor' },
       { text: 'Que sea detallista', vibe: 'ternura' },
@@ -77,7 +79,8 @@ const compatibilityQuestions = [
     ]
   },
   {
-    question: '¿Qué mensaje prefieres recibir?',
+    question: '¿Qué tipo de mensaje te gusta recibir?',
+    weight: 8,
     options: [
       { text: 'Algo tierno', vibe: 'ternura' },
       { text: 'Algo gracioso', vibe: 'humor' },
@@ -87,6 +90,7 @@ const compatibilityQuestions = [
   },
   {
     question: '¿Qué energía te atrae más?',
+    weight: 12,
     options: [
       { text: 'Romántica', vibe: 'ternura' },
       { text: 'Divertida', vibe: 'humor' },
@@ -96,22 +100,74 @@ const compatibilityQuestions = [
   },
   {
     question: '¿Qué cita elegirías?',
+    weight: 8,
     options: [
       { text: 'Cena bonita', vibe: 'ternura' },
       { text: 'Playa o mirador', vibe: 'misterio' },
       { text: 'Juegos y risas', vibe: 'humor' },
       { text: 'Plan sorpresa', vibe: 'aventura' }
     ]
+  },
+  {
+    question: '¿Qué detalle te derrite más?',
+    weight: 10,
+    options: [
+      { text: 'Una canción dedicada', vibe: 'ternura' },
+      { text: 'Un mensaje inesperado', vibe: 'misterio' },
+      { text: 'Un abrazo largo', vibe: 'calma' },
+      { text: 'Que recuerden algo importante', vibe: 'profundidad' }
+    ]
+  },
+  {
+    question: '¿Qué prefieres en una conversación?',
+    weight: 12,
+    options: [
+      { text: 'Reír mucho', vibe: 'humor' },
+      { text: 'Hablar profundo', vibe: 'profundidad' },
+      { text: 'Coquetear sutilmente', vibe: 'misterio' },
+      { text: 'Contarse de todo', vibe: 'calma' }
+    ]
+  },
+  {
+    question: '¿Qué te parece más atractivo?',
+    weight: 12,
+    options: [
+      { text: 'La ternura', vibe: 'ternura' },
+      { text: 'El humor', vibe: 'humor' },
+      { text: 'La seguridad', vibe: 'intensidad' },
+      { text: 'La inteligencia', vibe: 'profundidad' }
+    ]
+  },
+  {
+    question: '¿Qué harías si te gusta alguien?',
+    weight: 8,
+    options: [
+      { text: 'Se lo digo directo', vibe: 'intensidad' },
+      { text: 'Tiro indirectas', vibe: 'misterio' },
+      { text: 'Espero señales', vibe: 'calma' },
+      { text: 'Me pongo nervioso/a', vibe: 'ternura' }
+    ]
+  },
+  {
+    question: '¿Qué tipo de conexión buscas?',
+    weight: 10,
+    options: [
+      { text: 'Algo tranquilo', vibe: 'calma' },
+      { text: 'Algo intenso', vibe: 'intensidad' },
+      { text: 'Algo divertido', vibe: 'humor' },
+      { text: 'Algo serio', vibe: 'profundidad' }
+    ]
   }
 ];
 
 const compatibleVibes = {
-  ternura: ['calma', 'misterio'],
-  calma: ['ternura', 'humor'],
-  humor: ['aventura', 'calma'],
-  aventura: ['humor', 'intensidad'],
-  misterio: ['ternura', 'intensidad'],
-  intensidad: ['misterio', 'aventura']
+  ternura: ['calma', 'misterio', 'profundidad'],
+  calma: ['ternura', 'humor', 'profundidad'],
+  humor: ['aventura', 'calma', 'ternura'],
+  aventura: ['humor', 'intensidad', 'misterio'],
+  misterio: ['ternura', 'intensidad', 'aventura'],
+  intensidad: ['misterio', 'aventura', 'profundidad'],
+  profundidad: ['calma', 'ternura', 'intensidad']
 };
 
 let selectedMode = 'number';
@@ -338,40 +394,59 @@ function showCompatibilityHandoff() {
 function scoreCompatibility() {
   let score = 0;
   const details = [];
+  const vibeCounter = {};
 
   compatibilityQuestions.forEach((question, index) => {
     const answerOne = question.options[compatAnswers[1][index]];
     const answerTwo = question.options[compatAnswers[2][index]];
     if (!answerOne || !answerTwo) return;
 
+    const weight = question.weight || 10;
+    let earned = Math.round(weight * 0.35);
+    let matchType = 'diferente';
+
     if (answerOne.vibe === answerTwo.vibe) {
-      score += 20;
-      details.push('igual');
+      earned = weight;
+      matchType = 'igual';
     } else if ((compatibleVibes[answerOne.vibe] || []).includes(answerTwo.vibe)) {
-      score += 15;
-      details.push('compatible');
-    } else {
-      score += 8;
-      details.push('diferente');
+      earned = Math.round(weight * 0.75);
+      matchType = 'compatible';
     }
+
+    score += earned;
+    details.push(matchType);
+    vibeCounter[answerOne.vibe] = (vibeCounter[answerOne.vibe] || 0) + 1;
+    vibeCounter[answerTwo.vibe] = (vibeCounter[answerTwo.vibe] || 0) + 1;
   });
 
-  return { score, details };
+  const dominantVibe = Object.entries(vibeCounter).sort((a, b) => b[1] - a[1])[0]?.[0] || 'misterio';
+  return { score: Math.min(100, score), details, dominantVibe };
 }
 
-function getCompatibilityMessage(score) {
-  if (score >= 90) return { title: 'Química peligrosa', note: 'Hay miradas, risas y una conexión que se nota. Esta vibra pide una segunda ronda.' };
-  if (score >= 75) return { title: 'Muy buena vibra', note: 'Hay complicidad y curiosidad. No está todo dicho, pero definitivamente hay algo interesante.' };
-  if (score >= 55) return { title: 'Conexión misteriosa', note: 'No son iguales, y eso puede hacerlo más entretenido. Hay contraste, tensión y ganas de descubrir más.' };
-  if (score >= 35) return { title: 'Atracción con desafío', note: 'Hay diferencias claras, pero también espacio para sorprenderse. Aquí manda la paciencia y el humor.' };
-  return { title: 'Vibra caótica', note: 'No todo calza, pero al menos hay historia para contar. A veces lo raro también tiene encanto.' };
+function getCompatibilityMessage(score, dominantVibe) {
+  const vibeLabels = {
+    ternura: 'conexión tierna',
+    calma: 'complicidad tranquila',
+    humor: 'química divertida',
+    aventura: 'chispa espontánea',
+    misterio: 'tensión misteriosa',
+    intensidad: 'atracción intensa',
+    profundidad: 'conexión profunda'
+  };
+  const type = vibeLabels[dominantVibe] || 'conexión misteriosa';
+
+  if (score >= 90) return { title: 'Química peligrosa', type, note: 'Aquí hay miradas, risas y una conexión que se nota. Si esto fuera una película, ya estarían en la escena final.' };
+  if (score >= 75) return { title: 'Muy buena vibra', type, note: 'Hay complicidad, curiosidad y una tensión bonita. No está todo dicho, pero definitivamente hay algo interesante.' };
+  if (score >= 55) return { title: 'Conexión misteriosa', type, note: 'No son iguales, y eso puede hacerlo más entretenido. Hay contraste, coqueteo y ganas de descubrir más.' };
+  if (score >= 35) return { title: 'Atracción con desafío', type, note: 'Hay diferencias claras, pero también espacio para sorprenderse. Aquí manda la paciencia, el humor y una buena conversación.' };
+  return { title: 'Vibra caótica', type, note: 'No todo calza, pero al menos hay historia para contar. A veces lo raro también tiene encanto.' };
 }
 
 function showCompatibilityResult() {
-  const { score } = scoreCompatibility();
-  const message = getCompatibilityMessage(score);
+  const { score, dominantVibe } = scoreCompatibility();
+  const message = getCompatibilityMessage(score, dominantVibe);
   resultTitle.textContent = message.title;
-  resultCopy.textContent = 'Compatibilidad mágica';
+  resultCopy.textContent = `Compatibilidad mágica · ${message.type}`;
   resultValue.className = 'result-number compatibility-result';
   resultValue.textContent = `${score}%`;
   resultNote.textContent = message.note;
