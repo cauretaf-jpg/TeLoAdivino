@@ -49,7 +49,69 @@ const modes = {
     icon: '🌙', eyebrow: 'Modo mágico', title: 'Elige una figura', pill: 'Símbolo',
     copy: 'Mira la lista de símbolos, elige uno mentalmente y no lo digas. Yo lo adivinaré.',
     question: '¿Tu símbolo<br>está aquí?', resultCopy: 'Estás pensando en'
+  },
+  compatibility: {
+    icon: '💘', eyebrow: 'Modo coqueto', title: 'Compatibilidad mágica', pill: 'Química',
+    copy: 'Juegan dos personas. La Persona 1 responde primero, luego pasa el celular a la Persona 2. Al final calculo su química.',
+    question: '¿Qué tanta<br>química tienen?', resultCopy: 'Compatibilidad mágica'
   }
+};
+
+const compatibilityQuestions = [
+  {
+    question: '¿Qué plan prefieres?',
+    options: [
+      { text: 'Café tranquilo', vibe: 'calma' },
+      { text: 'Cine y cabritas', vibe: 'ternura' },
+      { text: 'Paseo nocturno', vibe: 'misterio' },
+      { text: 'Salida espontánea', vibe: 'aventura' }
+    ]
+  },
+  {
+    question: '¿Qué te conquista más?',
+    options: [
+      { text: 'Que me haga reír', vibe: 'humor' },
+      { text: 'Que sea detallista', vibe: 'ternura' },
+      { text: 'Que me escuche', vibe: 'calma' },
+      { text: 'Que tenga seguridad', vibe: 'intensidad' }
+    ]
+  },
+  {
+    question: '¿Qué mensaje prefieres recibir?',
+    options: [
+      { text: 'Algo tierno', vibe: 'ternura' },
+      { text: 'Algo gracioso', vibe: 'humor' },
+      { text: 'Algo directo', vibe: 'intensidad' },
+      { text: 'Algo misterioso', vibe: 'misterio' }
+    ]
+  },
+  {
+    question: '¿Qué energía te atrae más?',
+    options: [
+      { text: 'Romántica', vibe: 'ternura' },
+      { text: 'Divertida', vibe: 'humor' },
+      { text: 'Tranquila', vibe: 'calma' },
+      { text: 'Intensa', vibe: 'intensidad' }
+    ]
+  },
+  {
+    question: '¿Qué cita elegirías?',
+    options: [
+      { text: 'Cena bonita', vibe: 'ternura' },
+      { text: 'Playa o mirador', vibe: 'misterio' },
+      { text: 'Juegos y risas', vibe: 'humor' },
+      { text: 'Plan sorpresa', vibe: 'aventura' }
+    ]
+  }
+];
+
+const compatibleVibes = {
+  ternura: ['calma', 'misterio'],
+  calma: ['ternura', 'humor'],
+  humor: ['aventura', 'calma'],
+  aventura: ['humor', 'intensidad'],
+  misterio: ['ternura', 'intensidad'],
+  intensidad: ['misterio', 'aventura']
 };
 
 let selectedMode = 'number';
@@ -59,8 +121,11 @@ let total = 0;
 let birthdayDay = 0;
 let lastScreen = 'homeScreen';
 let activeCards = baseCards31;
+let compatPerson = 1;
+let compatQuestionIndex = 0;
+let compatAnswers = { 1: [], 2: [] };
 
-const screens = ['homeScreen','modeScreen','introScreen','gameScreen','resultScreen','explainScreen'];
+const screens = ['homeScreen','modeScreen','introScreen','gameScreen','compatScreen','resultScreen','explainScreen'];
 const playCard = document.getElementById('playCard');
 const stepPill = document.getElementById('stepPill');
 const progressDots = document.getElementById('progressDots');
@@ -70,6 +135,12 @@ const resultValue = document.getElementById('resultValue');
 const resultCopy = document.getElementById('resultCopy');
 const resultNote = document.getElementById('resultNote');
 const resultTitle = document.getElementById('resultTitle');
+const compatStepPill = document.getElementById('compatStepPill');
+const compatEyebrow = document.getElementById('compatEyebrow');
+const compatQuestionTitle = document.getElementById('compatQuestionTitle');
+const compatHelpText = document.getElementById('compatHelpText');
+const compatOptions = document.getElementById('compatOptions');
+const compatProgressDots = document.getElementById('compatProgressDots');
 
 function showScreen(id) {
   screens.forEach(screenId => document.getElementById(screenId).classList.remove('active'));
@@ -95,6 +166,11 @@ function startSelectedMode() {
   currentCardIndex = 0;
   resultNote.textContent = '';
   resultValue.className = 'result-number';
+
+  if (selectedMode === 'compatibility') {
+    startCompatibility();
+    return;
+  }
 
   if (selectedMode === 'birthday') {
     stage = 'day';
@@ -193,6 +269,115 @@ function showResult() {
   showScreen('resultScreen');
 }
 
+
+function startCompatibility() {
+  compatPerson = 1;
+  compatQuestionIndex = 0;
+  compatAnswers = { 1: [], 2: [] };
+  resultNote.textContent = '';
+  renderCompatibilityQuestion();
+  showScreen('compatScreen');
+}
+
+function renderCompatibilityQuestion() {
+  const totalQuestions = compatibilityQuestions.length;
+  const question = compatibilityQuestions[compatQuestionIndex];
+  compatStepPill.textContent = `Persona ${compatPerson} · ${compatQuestionIndex + 1} de ${totalQuestions}`;
+  compatEyebrow.textContent = compatPerson === 1 ? 'Responde sin que mire la otra persona' : 'Ahora responde la otra persona';
+  compatQuestionTitle.textContent = question.question;
+  compatHelpText.textContent = compatPerson === 1 ? 'Elige la opción que más va contigo.' : 'Responde honestamente. No intentes copiar la respuesta anterior.';
+  compatOptions.innerHTML = question.options.map((option, index) => `
+    <button class="compat-option" data-index="${index}">
+      <span>${index + 1}</span>
+      <strong>${option.text}</strong>
+    </button>
+  `).join('');
+  compatOptions.querySelectorAll('.compat-option').forEach(button => {
+    button.addEventListener('click', () => answerCompatibility(Number(button.dataset.index)));
+  });
+  renderCompatibilityDots();
+}
+
+function renderCompatibilityDots() {
+  const totalQuestions = compatibilityQuestions.length;
+  compatProgressDots.innerHTML = Array.from({ length: totalQuestions }, (_, index) => {
+    const className = index < compatQuestionIndex ? 'dot done' : index === compatQuestionIndex ? 'dot current' : 'dot';
+    return `<span class="${className}"></span>`;
+  }).join('');
+}
+
+function answerCompatibility(optionIndex) {
+  compatAnswers[compatPerson].push(optionIndex);
+  compatQuestionIndex += 1;
+
+  if (compatQuestionIndex >= compatibilityQuestions.length) {
+    if (compatPerson === 1) {
+      showCompatibilityHandoff();
+    } else {
+      showCompatibilityResult();
+    }
+    return;
+  }
+  renderCompatibilityQuestion();
+}
+
+function showCompatibilityHandoff() {
+  compatStepPill.textContent = 'Cambio de turno';
+  compatEyebrow.textContent = 'Pausa mágica';
+  compatQuestionTitle.textContent = 'Pasa el celular a la Persona 2';
+  compatHelpText.textContent = 'La Persona 2 debe responder las mismas preguntas sin ver las respuestas anteriores.';
+  compatOptions.innerHTML = '<button class="primary-button compat-continue" id="startPersonTwoBtn">Comenzar Persona 2</button>';
+  compatProgressDots.innerHTML = '';
+  document.getElementById('startPersonTwoBtn').addEventListener('click', () => {
+    compatPerson = 2;
+    compatQuestionIndex = 0;
+    renderCompatibilityQuestion();
+  });
+}
+
+function scoreCompatibility() {
+  let score = 0;
+  const details = [];
+
+  compatibilityQuestions.forEach((question, index) => {
+    const answerOne = question.options[compatAnswers[1][index]];
+    const answerTwo = question.options[compatAnswers[2][index]];
+    if (!answerOne || !answerTwo) return;
+
+    if (answerOne.vibe === answerTwo.vibe) {
+      score += 20;
+      details.push('igual');
+    } else if ((compatibleVibes[answerOne.vibe] || []).includes(answerTwo.vibe)) {
+      score += 15;
+      details.push('compatible');
+    } else {
+      score += 8;
+      details.push('diferente');
+    }
+  });
+
+  return { score, details };
+}
+
+function getCompatibilityMessage(score) {
+  if (score >= 90) return { title: 'Química peligrosa', note: 'Hay miradas, risas y una conexión que se nota. Esta vibra pide una segunda ronda.' };
+  if (score >= 75) return { title: 'Muy buena vibra', note: 'Hay complicidad y curiosidad. No está todo dicho, pero definitivamente hay algo interesante.' };
+  if (score >= 55) return { title: 'Conexión misteriosa', note: 'No son iguales, y eso puede hacerlo más entretenido. Hay contraste, tensión y ganas de descubrir más.' };
+  if (score >= 35) return { title: 'Atracción con desafío', note: 'Hay diferencias claras, pero también espacio para sorprenderse. Aquí manda la paciencia y el humor.' };
+  return { title: 'Vibra caótica', note: 'No todo calza, pero al menos hay historia para contar. A veces lo raro también tiene encanto.' };
+}
+
+function showCompatibilityResult() {
+  const { score } = scoreCompatibility();
+  const message = getCompatibilityMessage(score);
+  resultTitle.textContent = message.title;
+  resultCopy.textContent = 'Compatibilidad mágica';
+  resultValue.className = 'result-number compatibility-result';
+  resultValue.textContent = `${score}%`;
+  resultNote.textContent = message.note;
+  showScreen('resultScreen');
+}
+
 function openExplanation(fromScreen) {
   lastScreen = fromScreen;
   showScreen('explainScreen');
@@ -210,6 +395,8 @@ document.getElementById('backHomeFromModesBtn').addEventListener('click', () => 
 document.getElementById('backModesFromIntroBtn').addEventListener('click', openModes);
 document.getElementById('startSelectedBtn').addEventListener('click', startSelectedMode);
 document.getElementById('backToModesBtn').addEventListener('click', openModes);
+document.getElementById('backToModesFromCompatBtn').addEventListener('click', openModes);
+document.getElementById('resetCompatBtn').addEventListener('click', startCompatibility);
 document.getElementById('yesBtn').addEventListener('click', () => answer(true));
 document.getElementById('noBtn').addEventListener('click', () => answer(false));
 document.getElementById('resetBtn').addEventListener('click', resetCurrentGame);

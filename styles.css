@@ -153,3 +153,17 @@ button:active { transform: scale(.98); }
   .symbol-cell { min-height: 56px; font-size: 27px; }
   .result-number.date-result { width: 220px; font-size: 30px; }
 }
+
+.compatibility-heading .subtitle { max-width: 330px; margin: 12px auto 0; }
+.compat-options { display: grid; gap: 12px; margin-top: 8px; }
+.compat-option { width: 100%; min-height: 72px; border-radius: 24px; background: rgba(255,255,255,.84); border: 1px solid rgba(109,56,199,.14); box-shadow: 0 14px 34px rgba(61,30,111,.10); color: var(--primary-dark); display: grid; grid-template-columns: 44px 1fr; align-items: center; text-align: left; gap: 12px; padding: 14px 16px; }
+.compat-option span { width: 44px; height: 44px; border-radius: 16px; display: grid; place-items: center; background: linear-gradient(135deg, #efe6ff, #fff5d6); color: var(--primary); font-weight: 1000; }
+.compat-option strong { font-size: 17px; line-height: 1.25; }
+.compat-continue { width: 100%; margin-top: 16px; }
+.result-number.compatibility-result { width: 190px; font-size: 54px; }
+
+@media (max-width: 380px) {
+  .compat-option { min-height: 66px; padding: 12px 14px; }
+  .compat-option strong { font-size: 16px; }
+  .result-number.compatibility-result { width: 176px; font-size: 48px; }
+}

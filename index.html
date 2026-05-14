@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#6d38c7" />
-  <meta name="description" content="TeLoAdivino: juegos de adivinanza con números, cumpleaños y símbolos." />
+  <meta name="description" content="TeLoAdivino: juegos de adivinanza con números, cumpleaños, símbolos y compatibilidad mágica." />
   <title>TeLoAdivino</title>
   <link rel="manifest" href="manifest.json" />
   <link rel="stylesheet" href="styles.css" />
@@ -57,6 +57,11 @@
           <strong>Adivina mi símbolo</strong>
           <small>Elige una figura secreta.</small>
         </button>
+        <button class="mode-card" data-mode="compatibility">
+          <span class="mode-icon">💘</span>
+          <strong>Compatibilidad mágica</strong>
+          <small>Dos personas responden y la app calcula la química.</small>
+        </button>
       </div>
     </section>
 
@@ -93,6 +98,23 @@
       <div class="progress-dots" id="progressDots"></div>
     </section>
 
+
+
+    <section id="compatScreen" class="screen">
+      <div class="topbar">
+        <button class="icon-button" id="backToModesFromCompatBtn" aria-label="Volver">←</button>
+        <div class="step-pill" id="compatStepPill">Persona 1</div>
+        <button class="icon-button ghost" id="resetCompatBtn" aria-label="Reiniciar">↻</button>
+      </div>
+      <div class="question-block compatibility-heading">
+        <p class="eyebrow" id="compatEyebrow">Compatibilidad mágica</p>
+        <h2 id="compatQuestionTitle">¿Qué plan prefieres?</h2>
+        <p class="subtitle" id="compatHelpText">Responde sin que la otra persona mire.</p>
+      </div>
+      <div class="compat-options" id="compatOptions"></div>
+      <div class="progress-dots" id="compatProgressDots"></div>
+    </section>
+
     <section id="resultScreen" class="screen">
       <div class="confetti" aria-hidden="true"></div>
       <div class="result-card">
@@ -125,8 +147,9 @@
           <div><strong>Números</strong><span>1 al 31</span></div>
           <div><strong>Cumpleaños</strong><span>día 1 al 31 + mes 1 al 12</span></div>
           <div><strong>Símbolos</strong><span>figuras con valor secreto</span></div>
+          <div><strong>Compatibilidad</strong><span>test de dos personas</span></div>
         </div>
-        <p>En el modo cumpleaños, la app primero adivina el día y luego el mes. En símbolos, cada figura tiene un número oculto.</p>
+        <p>En el modo cumpleaños, la app primero adivina el día y luego el mes. En símbolos, cada figura tiene un número oculto. En compatibilidad, dos personas responden el mismo test y la app compara sus elecciones.</p>
         <p class="example"><strong>Ejemplo:</strong> si dices Sí en las tarjetas 1, 2 y 4, la suma es 1 + 2 + 4 = 7.</p>
         <button class="primary-button" id="explainPlayBtn">Elegir juego</button>
       </article>
