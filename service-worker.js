@@ -1,5 +1,12 @@
-const CACHE_NAME = 'teloadivino-v3-1';
-const ASSETS = ['./', './index.html', './styles.css', './script.js', './manifest.json', './icon.svg'];
+const CACHE_NAME = 'telo-adivino-v3-6';
+const ASSETS = [
+  './',
+  './index.html',
+  './styles.css',
+  './script.js',
+  './manifest.json',
+  './icon.svg'
+];
 
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(ASSETS)));
@@ -15,5 +22,5 @@ self.addEventListener('activate', event => {
 
 self.addEventListener('fetch', event => {
   if (event.request.method !== 'GET') return;
-  event.respondWith(caches.match(event.request).then(response => response || fetch(event.request)));
+  event.respondWith(fetch(event.request).catch(() => caches.match(event.request).then(response => response || caches.match('./index.html'))));
 });

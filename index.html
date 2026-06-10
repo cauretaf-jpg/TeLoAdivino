@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="theme-color" content="#6d38c7" />
-  <meta name="description" content="TeLoAdivino: juegos de adivinanza con números, cumpleaños, símbolos y compatibilidad mágica." />
+  <meta name="theme-color" content="#c0266f" />
+  <meta name="description" content="TeLoAdivino: juegos de adivinanza, cumpleaños y compatibilidad mágica para varias personas." />
   <title>TeLoAdivino</title>
   <link rel="manifest" href="manifest.json" />
   <link rel="stylesheet" href="styles.css" />
@@ -15,13 +15,13 @@
       <div class="decor decor-one"></div>
       <div class="decor decor-two"></div>
       <div class="hero-card">
-        <p class="eyebrow">Juego mental</p>
+        <p class="eyebrow">Juego social</p>
         <h1>TeLo<br><span>Adivino</span></h1>
-        <p class="subtitle">Elige un modo, piensa en secreto y responde solo <strong>Sí</strong> o <strong>No</strong>. La app hará el resto.</p>
+        <p class="subtitle">Elige un modo, responde en privado y deja que la app descubra números, cumpleaños o afinidades entre personas.</p>
         <div class="magic-hat" aria-hidden="true">
           <div class="floating-card card-a">🎂</div>
           <div class="floating-card card-b">7</div>
-          <div class="floating-card card-c">🌙</div>
+          <div class="floating-card card-c">💘</div>
           <div class="hat-top"></div>
           <div class="hat-base"></div>
           <div class="glow"></div>
@@ -41,28 +41,39 @@
         <p class="eyebrow">Elige una experiencia</p>
         <h2>¿Qué quieres<br>adivinar?</h2>
       </div>
-      <div class="mode-grid">
-        <button class="mode-card" data-mode="number">
-          <span class="mode-icon">🔢</span>
-          <strong>Adivina mi número</strong>
-          <small>Piensa un número del 1 al 31.</small>
-        </button>
-        <button class="mode-card" data-mode="birthday">
-          <span class="mode-icon">🎂</span>
-          <strong>Adivina mi cumpleaños</strong>
-          <small>Primero el día, después el mes.</small>
-        </button>
-        <button class="mode-card" data-mode="symbol">
-          <span class="mode-icon">🌙</span>
-          <strong>Adivina mi símbolo</strong>
-          <small>Elige una figura secreta.</small>
-        </button>
-        <button class="mode-card" data-mode="compatibility">
-          <span class="mode-icon">💘</span>
-          <strong>Compatibilidad mágica</strong>
-          <small>Dos personas responden y la app calcula la química.</small>
-        </button>
+      <div class="mode-section">
+        <div class="mode-section-title"><span>✨</span><strong>Adivinanzas</strong></div>
+        <div class="mode-grid compact">
+          <button class="mode-card" data-mode="number">
+            <span class="mode-icon">🔢</span>
+            <strong>Adivina mi número</strong>
+            <small>Piensa un número del 1 al 31.</small>
+          </button>
+          <button class="mode-card" data-mode="birthday">
+            <span class="mode-icon">🎂</span>
+            <strong>Adivina mi cumpleaños</strong>
+            <small>Primero el día, después el mes.</small>
+          </button>
+        </div>
       </div>
+
+      <div class="mode-section">
+        <div class="mode-section-title"><span>💘</span><strong>Compatibilidad mágica</strong></div>
+        <div class="mode-grid compact">
+          <button class="mode-card featured" data-mode="compatibility">
+            <span class="mode-icon">💘</span>
+            <strong>Compatibilidad mágica</strong>
+            <small>De 2 a 10 personas responden en privado. La app detecta los mejores matches.</small>
+          </button>
+          <button class="mode-card featured alt" data-mode="vibe">
+            <span class="mode-icon">🧭</span>
+            <strong>Descubre tu vibra</strong>
+            <small>De 1 a 10 personas. La app revela si tu energía es clásica, coqueta, íntima o atrevida.</small>
+          </button>
+        </div>
+      </div>
+
+      <button class="secondary-button small-action" id="historyBtn">Ver historial local</button>
     </section>
 
     <section id="introScreen" class="screen">
@@ -77,6 +88,99 @@
         <h2 id="introTitle">Piensa un número</h2>
         <p id="introCopy" class="subtitle">Piensa un número del 1 al 31. No lo digas. Solo responde si aparece en cada tarjeta.</p>
         <button class="primary-button" id="startSelectedBtn">Estoy listo</button>
+      </article>
+    </section>
+
+
+    <section id="compatSetupScreen" class="screen">
+      <div class="topbar">
+        <button class="icon-button" id="backIntroFromCompatSetupBtn" aria-label="Volver">←</button>
+        <div class="step-pill">Configurar match</div>
+        <span class="topbar-spacer"></span>
+      </div>
+      <article class="intro-panel compat-setup-panel">
+        <div class="intro-icon">💘</div>
+        <p class="eyebrow">Compatibilidad mágica</p>
+        <h2>Arma el grupo</h2>
+        <p class="subtitle">Elige el tipo de compatibilidad, cuántas personas jugarán y escribe el nombre de cada participante. Cada modo tiene preguntas distintas.</p>
+
+        <div class="setup-block">
+          <label class="setup-label">Tipo de compatibilidad</label>
+          <div class="compat-mode-picker" id="compatModePicker">
+            <button type="button" class="compat-mode-option active" data-compat-mode="actual">
+              <strong>Actual</strong><span>10 preguntas equilibradas para medir afinidad general.</span>
+            </button>
+            <button type="button" class="compat-mode-option" data-compat-mode="coqueta">
+              <strong>Coqueta</strong><span>Más juego, indirectas, tensión bonita y química social.</span>
+            </button>
+            <button type="button" class="compat-mode-option" data-compat-mode="profunda">
+              <strong>Íntima y profunda</strong><span>Confianza, límites, emociones, cuidado y forma de construir vínculo.</span>
+            </button>
+            <button type="button" class="compat-mode-option" data-compat-mode="atrevida">
+              <strong>Atrevida</strong><span>Más sensual y de tensión. Jueguen solo si todo el grupo está cómodo.</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="setup-block">
+          <label class="setup-label">Participantes</label>
+          <div class="participant-picker" id="participantPicker">
+            <button type="button" class="picker-option active" data-count="2">2</button>
+            <button type="button" class="picker-option" data-count="3">3</button>
+            <button type="button" class="picker-option" data-count="4">4</button>
+            <button type="button" class="picker-option" data-count="5">5</button>
+            <button type="button" class="picker-option" data-count="6">6</button>
+            <button type="button" class="picker-option" data-count="7">7</button>
+            <button type="button" class="picker-option" data-count="8">8</button>
+            <button type="button" class="picker-option" data-count="9">9</button>
+            <button type="button" class="picker-option" data-count="10">10</button>
+          </div>
+        </div>
+
+        <div class="setup-block">
+          <label class="setup-label">Nombres</label>
+          <div class="participant-names" id="participantNames"></div>
+        </div>
+
+        <button class="primary-button" id="startCompatibilityConfiguredBtn">Comenzar compatibilidad</button>
+      </article>
+    </section>
+
+
+    <section id="vibeSetupScreen" class="screen">
+      <div class="topbar">
+        <button class="icon-button" id="backIntroFromVibeSetupBtn" aria-label="Volver">←</button>
+        <div class="step-pill">Descubre tu vibra</div>
+        <span class="topbar-spacer"></span>
+      </div>
+      <article class="intro-panel compat-setup-panel">
+        <div class="intro-icon">🧭</div>
+        <p class="eyebrow">Mapa de conexión</p>
+        <h2>Arma el grupo</h2>
+        <p class="subtitle">Cada persona responde en privado. Al final verás su vibra principal, vibra secundaria, porcentajes por categoría y afinidades entre personas.</p>
+
+        <div class="setup-block">
+          <label class="setup-label">Participantes</label>
+          <div class="participant-picker" id="vibeParticipantPicker">
+            <button type="button" class="vibe-picker-option active" data-count="1">1</button>
+            <button type="button" class="vibe-picker-option" data-count="2">2</button>
+            <button type="button" class="vibe-picker-option" data-count="3">3</button>
+            <button type="button" class="vibe-picker-option" data-count="4">4</button>
+            <button type="button" class="vibe-picker-option" data-count="5">5</button>
+            <button type="button" class="vibe-picker-option" data-count="6">6</button>
+            <button type="button" class="vibe-picker-option" data-count="7">7</button>
+            <button type="button" class="vibe-picker-option" data-count="8">8</button>
+            <button type="button" class="vibe-picker-option" data-count="9">9</button>
+            <button type="button" class="vibe-picker-option" data-count="10">10</button>
+          </div>
+        </div>
+
+        <div class="setup-block">
+          <label class="setup-label">Nombres</label>
+          <div class="participant-names" id="vibeParticipantNames"></div>
+        </div>
+
+        <button class="primary-button" id="startVibeConfiguredBtn">Comenzar vibra</button>
       </article>
     </section>
 
@@ -122,16 +226,31 @@
         <h2 id="resultTitle">¡Ya lo sé!</h2>
         <p class="result-copy" id="resultCopy">Estás pensando en el número</p>
         <div class="result-number" id="resultValue">7</div>
-        <p class="result-note" id="resultNote"></p>
+        <div class="result-note" id="resultNote"></div>
         <div class="magician" aria-hidden="true">
           <div class="head"></div>
           <div class="body"></div>
           <div class="wand"></div>
           <div class="mini-hat"></div>
         </div>
-        <button class="primary-button" id="playAgainBtn">↻ Jugar otra vez</button>
+        <button class="primary-button" id="shareResultBtn">Compartir resultado</button>
+        <button class="secondary-button" id="playAgainBtn">↻ Jugar otra vez</button>
         <button class="secondary-button" id="changeModeBtn">Cambiar juego</button>
       </div>
+    </section>
+
+
+    <section id="historyScreen" class="screen">
+      <div class="topbar">
+        <button class="icon-button" id="backFromHistoryBtn" aria-label="Volver">←</button>
+        <div class="step-pill">Historial</div>
+        <button class="icon-button ghost" id="clearHistoryBtn" aria-label="Borrar historial">🗑</button>
+      </div>
+      <article class="explain-panel history-panel">
+        <h2>Historial local</h2>
+        <p>Se guardan solo en este navegador las últimas partidas de compatibilidad.</p>
+        <div id="historyList" class="history-list"></div>
+      </article>
     </section>
 
     <section id="explainScreen" class="screen">
@@ -146,10 +265,10 @@
         <div class="logic-list">
           <div><strong>Números</strong><span>1 al 31</span></div>
           <div><strong>Cumpleaños</strong><span>día 1 al 31 + mes 1 al 12</span></div>
-          <div><strong>Símbolos</strong><span>figuras con valor secreto</span></div>
-          <div><strong>Compatibilidad</strong><span>test de dos personas</span></div>
+          <div><strong>Compatibilidad</strong><span>test grupal de 2 a 10 personas</span></div>
+          <div><strong>Descubre tu vibra</strong><span>mapa individual y grupal de 1 a 10 personas</span></div>
         </div>
-        <p>En el modo cumpleaños, la app primero adivina el día y luego el mes. En símbolos, cada figura tiene un número oculto. En compatibilidad, dos personas responden el mismo test y la app compara sus elecciones.</p>
+        <p>En el modo cumpleaños, la app primero adivina el día y luego el mes. En compatibilidad, varias personas escriben sus nombres, eligen un modo y responden en privado. La app compara sus elecciones para encontrar los matches con mayor afinidad. En Descubre tu vibra, cada participante obtiene un mapa entre cuatro categorías: clásica, coqueta, íntima y atrevida. El modo Atrevida mantiene un tono sensual, pero no explícito.</p>
         <p class="example"><strong>Ejemplo:</strong> si dices Sí en las tarjetas 1, 2 y 4, la suma es 1 + 2 + 4 = 7.</p>
         <button class="primary-button" id="explainPlayBtn">Elegir juego</button>
       </article>

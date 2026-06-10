@@ -1,23 +1,15 @@
-TeLoAdivino v3.1
+TeLoAdivino v3.6
 
-Incluye:
-- Adivina mi número
-- Adivina mi cumpleaños
-- Adivina mi símbolo
-- Compatibilidad mágica para dos personas
+Cambios principales:
+- Nuevo juego: Descubre tu vibra.
+- Descubre tu vibra permite 1 a 10 participantes con nombres personalizados.
+- Resultado individual con vibra principal y secundaria: Clásica, Coqueta, Íntima o Atrevida.
+- Resultado grupal con vibra dominante del grupo.
+- Matches de vibra entre participantes con compatibilidad mínima de 25%.
+- Compatibilidad mágica mantiene 4 modos: Actual, Coqueta, Íntima y profunda, Atrevida.
+- La compatibilidad mágica ahora evita resultados de 0%: el mínimo es 25%.
+- Mantiene preguntas aleatorias, modo privado, ranking, compartir resultado e historial local.
+- Incluye Probar_TeLoAdivino.bat y Subir_TeLoAdivino.bat.
 
-Cambios v3.1:
-- Compatibilidad mágica ahora tiene 10 preguntas.
-- El cálculo de compatibilidad usa pesos por tipo de pregunta.
-- El resultado muestra porcentaje, tipo de conexión y lectura coqueta.
-- Se agregó Subir_TeLoAdivino.bat para publicar cambios en GitHub con doble clic.
-
-Uso local:
-Abre index.html en el navegador.
-
-Publicación:
-1. Copia/reemplaza estos archivos en la carpeta del proyecto:
-   C:\Users\caure\Desktop\Paginas\TeLoAdivino
-2. Ejecuta Subir_TeLoAdivino.bat desde esa carpeta.
-3. Escribe un mensaje de actualización y presiona Enter.
-4. Vercel debería actualizar automáticamente después del push.
+Para probar: doble clic en Probar_TeLoAdivino.bat.
+Para subir: copiar/reemplazar en la carpeta real y ejecutar Subir_TeLoAdivino.bat.

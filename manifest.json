@@ -1,11 +1,11 @@
 {
   "name": "TeLoAdivino",
   "short_name": "TeLoAdivino",
-  "description": "Juegos de adivinanza con números, cumpleaños y símbolos.",
+  "description": "Juegos de adivinanza, cumpleaños y compatibilidad mágica grupal.",
   "start_url": "./index.html",
   "display": "standalone",
-  "background_color": "#fff7e6",
-  "theme_color": "#6d38c7",
+  "background_color": "#fff1f5",
+  "theme_color": "#c0266f",
   "icons": [
     {
       "src": "icon.svg",
