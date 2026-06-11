@@ -1,11 +1,12 @@
-const CACHE_NAME = 'telo-adivino-v3-6';
+const CACHE_NAME = 'telo-adivino-v4-1';
 const ASSETS = [
   './',
   './index.html',
   './styles.css',
   './script.js',
   './manifest.json',
-  './icon.svg'
+  './icon.svg',
+  './firebase-config.js'
 ];
 
 self.addEventListener('install', event => {

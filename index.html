@@ -73,6 +73,17 @@
         </div>
       </div>
 
+      <div class="mode-section">
+        <div class="mode-section-title"><span>📱</span><strong>Jugar con amigos</strong></div>
+        <div class="mode-grid compact">
+          <button class="mode-card online-card" data-mode="online">
+            <span class="mode-icon">🔗</span>
+            <strong>Salas con QR <em>Beta</em></strong>
+            <small>Crea una sala, comparte el código o muestra un QR para que otros se unan.</small>
+          </button>
+        </div>
+      </div>
+
       <button class="secondary-button small-action" id="historyBtn">Ver historial local</button>
     </section>
 
@@ -219,6 +230,89 @@
       <div class="progress-dots" id="compatProgressDots"></div>
     </section>
 
+    <section id="onlineRoomScreen" class="screen">
+      <div class="topbar">
+        <button class="icon-button" id="backModesFromOnlineBtn" aria-label="Volver">←</button>
+        <div class="step-pill">Salas con QR · Beta</div>
+        <button class="icon-button ghost" id="resetOnlineRoomBtn" aria-label="Limpiar sala">↻</button>
+      </div>
+      <article class="intro-panel online-panel">
+        <div class="intro-icon">🔗</div>
+        <p class="eyebrow">Jugar con amigos</p>
+        <h2>Crear o unirse a una sala</h2>
+        <p class="subtitle">Crea una sala online con Firebase, comparte el código o muestra el QR para que otras personas se conecten desde su celular.</p>
+
+        <div class="online-tabs" role="tablist" aria-label="Opciones de sala">
+          <button type="button" class="online-tab active" id="createRoomTab">Crear sala</button>
+          <button type="button" class="online-tab" id="joinRoomTab">Unirse</button>
+        </div>
+
+        <div class="online-form active" id="createRoomForm">
+          <label class="name-field">
+            <span>Nombre de la sala</span>
+            <input type="text" id="roomNameInput" maxlength="28" placeholder="Ej: Cumpleaños Vale">
+          </label>
+          <label class="name-field">
+            <span>Tu nombre</span>
+            <input type="text" id="hostNameInput" maxlength="22" placeholder="Ej: Carlos">
+          </label>
+          <button class="primary-button" id="createRoomBtn">Crear sala</button>
+        </div>
+
+        <div class="online-form" id="joinRoomForm">
+          <label class="name-field">
+            <span>Código de sala</span>
+            <input type="text" id="joinCodeInput" maxlength="8" placeholder="Ej: X7K92">
+          </label>
+          <label class="name-field">
+            <span>Tu nombre</span>
+            <input type="text" id="guestNameInput" maxlength="22" placeholder="Ej: Valentina">
+          </label>
+          <button class="primary-button" id="joinRoomBtn">Unirse a sala</button>
+        </div>
+      </article>
+    </section>
+
+    <section id="roomLobbyScreen" class="screen">
+      <div class="topbar">
+        <button class="icon-button" id="backOnlineFromLobbyBtn" aria-label="Volver">←</button>
+        <div class="step-pill" id="roomLobbyPill">Lobby</div>
+        <button class="icon-button ghost" id="clearRoomBtn" aria-label="Cerrar sala">✕</button>
+      </div>
+      <article class="intro-panel online-panel lobby-panel">
+        <p class="eyebrow">Sala creada</p>
+        <h2 id="roomTitle">Sala</h2>
+        <div class="room-code-card">
+          <span>Código</span>
+          <strong id="roomCodeText">-----</strong>
+          <button class="secondary-button" id="copyRoomCodeBtn">Copiar código</button>
+        </div>
+        <div class="qr-card">
+          <img id="roomQrImage" alt="QR de invitación a la sala">
+          <small>Escanea este QR para abrir la sala en otro celular.</small>
+        </div>
+        <div class="invite-link-box">
+          <span>Link de invitación</span>
+          <input type="text" id="inviteLinkInput" readonly>
+          <button class="secondary-button" id="copyInviteLinkBtn">Copiar link</button>
+        </div>
+
+        <div class="setup-block">
+          <label class="setup-label">Agregar participante manual</label>
+          <div class="inline-add">
+            <input type="text" id="manualParticipantInput" maxlength="22" placeholder="Nombre">
+            <button class="secondary-button" id="addManualParticipantBtn">Agregar</button>
+          </div>
+        </div>
+
+        <section class="match-board online-board">
+          <strong>Participantes conectados</strong>
+          <div id="roomParticipantsList" class="room-participants-list"></div>
+        </section>
+        <p class="online-note">Sala conectada a Firebase Realtime Database. Los participantes se actualizan en tiempo real.</p>
+      </article>
+    </section>
+
     <section id="resultScreen" class="screen">
       <div class="confetti" aria-hidden="true"></div>
       <div class="result-card">
@@ -275,6 +369,9 @@
     </section>
   </main>
 
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
+  <script src="firebase-config.js"></script>
   <script src="script.js"></script>
 </body>
 </html>

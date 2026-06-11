@@ -656,9 +656,15 @@ let vibeQuestionIndex = 0;
 let vibeAnswers = {};
 let activeVibeQuestions = vibeQuestions;
 let lastShareText = '';
-const HISTORY_KEY = 'teloAdivinoHistoryV36';
+const HISTORY_KEY = 'teloAdivinoHistoryV41';
+const ROOM_KEY = 'teloAdivinoRoomV41';
+const PARTICIPANT_KEY = 'teloAdivinoParticipantIdV41';
+let currentRoom = null;
+let currentRoomCode = null;
+let roomListenerRef = null;
+let firebaseOnline = Boolean(window.teloFirebaseReady && window.teloDatabase);
 
-const screens = ['homeScreen','modeScreen','introScreen','compatSetupScreen','vibeSetupScreen','gameScreen','compatScreen','resultScreen','historyScreen','explainScreen'];
+const screens = ['homeScreen','modeScreen','introScreen','compatSetupScreen','vibeSetupScreen','gameScreen','compatScreen','onlineRoomScreen','roomLobbyScreen','resultScreen','historyScreen','explainScreen'];
 const playCard = document.getElementById('playCard');
 const stepPill = document.getElementById('stepPill');
 const progressDots = document.getElementById('progressDots');
@@ -686,6 +692,10 @@ function openModes() { showScreen('modeScreen'); }
 
 function prepareMode(mode) {
   selectedMode = mode;
+  if (mode === 'online') {
+    openOnlineRoom();
+    return;
+  }
   const data = modes[mode];
   document.getElementById('introPill').textContent = data.pill;
   document.getElementById('introIcon').textContent = data.icon;
@@ -1223,6 +1233,268 @@ function showVibeResult() {
   showScreen('resultScreen');
 }
 
+
+function generateRoomCode() {
+  const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  return Array.from({ length: 5 }, () => alphabet[Math.floor(Math.random() * alphabet.length)]).join('');
+}
+
+function getBaseInviteUrl() {
+  const cleanPath = window.location.href.split('?')[0].split('#')[0];
+  return cleanPath || 'https://teloadivino.vercel.app/';
+}
+
+function buildInviteLink(code) {
+  return `${getBaseInviteUrl()}?room=${encodeURIComponent(code)}`;
+}
+
+function getParticipantId() {
+  let id = localStorage.getItem(PARTICIPANT_KEY);
+  if (!id) {
+    id = `p_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+    localStorage.setItem(PARTICIPANT_KEY, id);
+  }
+  return id;
+}
+
+function getRoomRef(code) {
+  if (!firebaseOnline) return null;
+  return window.teloDatabase.ref(`rooms/${code}`);
+}
+
+function normalizeRoom(snapshotValue, fallbackCode = '') {
+  const value = snapshotValue || {};
+  const participantsObj = value.participants || {};
+  const participants = Object.entries(participantsObj)
+    .map(([id, participant]) => ({ id, ...participant }))
+    .sort((a, b) => (a.joinedAt || 0) - (b.joinedAt || 0));
+  return {
+    code: value.code || fallbackCode,
+    name: value.name || `Sala ${fallbackCode}`,
+    host: value.host || 'Anfitrión',
+    createdAt: value.createdAt || Date.now(),
+    status: value.status || 'lobby',
+    participants
+  };
+}
+
+function saveCurrentRoom() {
+  if (!currentRoom) return;
+  localStorage.setItem(ROOM_KEY, JSON.stringify(currentRoom));
+}
+
+function loadSavedRoom() {
+  try { return JSON.parse(localStorage.getItem(ROOM_KEY) || 'null'); } catch (_) { return null; }
+}
+
+function stopRoomListener() {
+  if (roomListenerRef && firebaseOnline) {
+    roomListenerRef.off();
+  }
+  roomListenerRef = null;
+}
+
+function listenToRoom(code) {
+  if (!firebaseOnline || !code) return;
+  stopRoomListener();
+  currentRoomCode = code;
+  roomListenerRef = getRoomRef(code);
+  roomListenerRef.on('value', snapshot => {
+    if (!snapshot.exists()) {
+      currentRoom = { code, name: `Sala ${code}`, host: 'Anfitrión', createdAt: Date.now(), status: 'lobby', participants: [] };
+      renderLobby(false);
+      return;
+    }
+    currentRoom = normalizeRoom(snapshot.val(), code);
+    saveCurrentRoom();
+    renderLobby(false);
+  }, error => {
+    console.warn('No se pudo escuchar la sala:', error);
+    alert('No se pudo conectar con Firebase. Revisa internet o las reglas de Realtime Database.');
+  });
+}
+
+function setOnlineStatus(message) {
+  const note = document.querySelector('.online-note');
+  if (note) note.textContent = message;
+}
+
+function setOnlineTab(tab) {
+  const isCreate = tab === 'create';
+  document.getElementById('createRoomTab')?.classList.toggle('active', isCreate);
+  document.getElementById('joinRoomTab')?.classList.toggle('active', !isCreate);
+  document.getElementById('createRoomForm')?.classList.toggle('active', isCreate);
+  document.getElementById('joinRoomForm')?.classList.toggle('active', !isCreate);
+}
+
+function openOnlineRoom() {
+  const requestedCode = new URLSearchParams(window.location.search).get('room');
+  showScreen('onlineRoomScreen');
+  if (requestedCode) {
+    setOnlineTab('join');
+    const codeInput = document.getElementById('joinCodeInput');
+    if (codeInput) codeInput.value = requestedCode.toUpperCase();
+  } else {
+    setOnlineTab('create');
+  }
+}
+
+async function createRoom() {
+  const name = document.getElementById('roomNameInput')?.value.trim() || 'Sala TeLoAdivino';
+  const host = document.getElementById('hostNameInput')?.value.trim() || 'Anfitrión';
+  const code = generateRoomCode();
+  const participantId = getParticipantId();
+  const now = Date.now();
+
+  currentRoom = {
+    code,
+    name,
+    host,
+    createdAt: now,
+    status: 'lobby',
+    participants: [{ id: participantId, name: host, role: 'Anfitrión', joinedAt: now, lastSeen: now }]
+  };
+
+  if (firebaseOnline) {
+    try {
+      await getRoomRef(code).set({
+        code,
+        name,
+        host,
+        createdAt: now,
+        status: 'lobby',
+        participants: {
+          [participantId]: { name: host, role: 'Anfitrión', joinedAt: now, lastSeen: now }
+        }
+      });
+      listenToRoom(code);
+    } catch (error) {
+      console.warn('Error creando sala en Firebase:', error);
+      alert('No se pudo crear la sala online. Se usará modo local temporal.');
+    }
+  }
+
+  saveCurrentRoom();
+  renderLobby();
+}
+
+async function joinRoom() {
+  const code = (document.getElementById('joinCodeInput')?.value.trim() || '').toUpperCase();
+  const guest = document.getElementById('guestNameInput')?.value.trim() || 'Invitado';
+  if (!code) {
+    alert('Escribe el código de la sala.');
+    return;
+  }
+  const participantId = getParticipantId();
+  const now = Date.now();
+
+  if (firebaseOnline) {
+    try {
+      const roomSnapshot = await getRoomRef(code).once('value');
+      if (!roomSnapshot.exists()) {
+        alert('No encontré esa sala. Revisa el código o pide que te compartan nuevamente el QR.');
+        return;
+      }
+      await getRoomRef(code).child(`participants/${participantId}`).set({
+        name: guest,
+        role: 'Participante',
+        joinedAt: now,
+        lastSeen: now
+      });
+      listenToRoom(code);
+    } catch (error) {
+      console.warn('Error uniéndose a la sala:', error);
+      alert('No se pudo unir a la sala. Revisa internet o las reglas de Firebase.');
+      return;
+    }
+  } else {
+    currentRoom = loadSavedRoom();
+    if (!currentRoom || currentRoom.code !== code) {
+      currentRoom = { code, name: `Sala ${code}`, host: 'Anfitrión', createdAt: now, status: 'lobby', participants: [] };
+    }
+    if (!currentRoom.participants.some(p => p.name.toLowerCase() === guest.toLowerCase())) {
+      currentRoom.participants.push({ id: participantId, name: guest, role: 'Participante', joinedAt: now, lastSeen: now });
+    }
+  }
+
+  saveCurrentRoom();
+  renderLobby();
+}
+
+async function addManualParticipant() {
+  const input = document.getElementById('manualParticipantInput');
+  const name = input?.value.trim();
+  if (!name || !currentRoom) return;
+  const id = `manual_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+  const now = Date.now();
+
+  if (firebaseOnline && currentRoom.code) {
+    try {
+      await getRoomRef(currentRoom.code).child(`participants/${id}`).set({ name, role: 'Manual', joinedAt: now, lastSeen: now });
+    } catch (error) {
+      console.warn('No se pudo agregar participante manual:', error);
+    }
+  } else if (!currentRoom.participants.some(p => p.name.toLowerCase() === name.toLowerCase())) {
+    currentRoom.participants.push({ id, name, role: 'Manual', joinedAt: now, lastSeen: now });
+    saveCurrentRoom();
+    renderLobby();
+  }
+  if (input) input.value = '';
+}
+
+function renderLobby(activateScreen = true) {
+  if (!currentRoom) currentRoom = loadSavedRoom();
+  if (!currentRoom) { openOnlineRoom(); return; }
+  const invite = buildInviteLink(currentRoom.code);
+  document.getElementById('roomLobbyPill').textContent = `Sala ${currentRoom.code}`;
+  document.getElementById('roomTitle').textContent = currentRoom.name;
+  document.getElementById('roomCodeText').textContent = currentRoom.code;
+  const linkInput = document.getElementById('inviteLinkInput');
+  if (linkInput) linkInput.value = invite;
+  const qr = document.getElementById('roomQrImage');
+  if (qr) qr.src = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(invite)}`;
+  const list = document.getElementById('roomParticipantsList');
+  if (list) {
+    list.innerHTML = currentRoom.participants.map((participant, index) => `
+      <div class="room-participant">
+        <span>${index + 1}</span>
+        <strong>${participant.name}</strong>
+        <small>${participant.role || 'Participante'}</small>
+      </div>
+    `).join('') || '<div class="empty-history">Aún no hay participantes.</div>';
+  }
+  setOnlineStatus(firebaseOnline
+    ? 'Sala conectada a Firebase Realtime Database. Los participantes se actualizan en tiempo real.'
+    : 'Modo local: Firebase no cargó. Revisa internet o la configuración.');
+  if (activateScreen) showScreen('roomLobbyScreen');
+}
+
+async function clearCurrentRoom() {
+  const code = currentRoom?.code || currentRoomCode;
+  stopRoomListener();
+  if (firebaseOnline && code) {
+    try { await getRoomRef(code).remove(); } catch (error) { console.warn('No se pudo eliminar la sala:', error); }
+  }
+  currentRoom = null;
+  currentRoomCode = null;
+  localStorage.removeItem(ROOM_KEY);
+  openOnlineRoom();
+}
+
+function copyText(value) {
+  if (!value) return;
+  if (navigator.clipboard?.writeText) {
+    navigator.clipboard.writeText(value).catch(() => {});
+    return;
+  }
+  const temp = document.createElement('textarea');
+  temp.value = value;
+  document.body.appendChild(temp);
+  temp.select();
+  document.execCommand('copy');
+  temp.remove();
+}
+
 function getHistory() {
   try { return JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]'); } catch (_) { return []; }
 }
@@ -1273,6 +1545,19 @@ function backFromExplanation() {
 
 function resetCurrentGame() { startSelectedMode(); }
 
+
+document.getElementById('backModesFromOnlineBtn')?.addEventListener('click', openModes);
+document.getElementById('backOnlineFromLobbyBtn')?.addEventListener('click', openOnlineRoom);
+document.getElementById('resetOnlineRoomBtn')?.addEventListener('click', clearCurrentRoom);
+document.getElementById('clearRoomBtn')?.addEventListener('click', clearCurrentRoom);
+document.getElementById('createRoomTab')?.addEventListener('click', () => setOnlineTab('create'));
+document.getElementById('joinRoomTab')?.addEventListener('click', () => setOnlineTab('join'));
+document.getElementById('createRoomBtn')?.addEventListener('click', createRoom);
+document.getElementById('joinRoomBtn')?.addEventListener('click', joinRoom);
+document.getElementById('addManualParticipantBtn')?.addEventListener('click', addManualParticipant);
+document.getElementById('copyRoomCodeBtn')?.addEventListener('click', () => copyText(currentRoom?.code));
+document.getElementById('copyInviteLinkBtn')?.addEventListener('click', () => copyText(document.getElementById('inviteLinkInput')?.value));
+
 document.getElementById('chooseModeBtn').addEventListener('click', openModes);
 document.getElementById('historyBtn')?.addEventListener('click', openHistory);
 document.getElementById('backFromHistoryBtn')?.addEventListener('click', openModes);
@@ -1290,6 +1575,7 @@ document.querySelectorAll('.picker-option').forEach(button => {
     button.classList.add('active');
     renderParticipantNameInputs();
 renderVibeParticipantNameInputs();
+if (new URLSearchParams(window.location.search).has('room')) { openOnlineRoom(); }
   });
 });
 
@@ -1332,6 +1618,7 @@ document.querySelectorAll('.mode-card').forEach(button => {
 
 renderParticipantNameInputs();
 renderVibeParticipantNameInputs();
+if (new URLSearchParams(window.location.search).has('room')) { openOnlineRoom(); }
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
