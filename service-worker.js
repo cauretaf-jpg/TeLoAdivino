@@ -1,4 +1,4 @@
-const CACHE_NAME = 'telo-adivino-v4-1';
+const CACHE_NAME = 'telo-adivino-v4-2';
 const ASSETS = [
   './',
   './index.html',

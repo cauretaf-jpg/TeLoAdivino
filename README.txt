@@ -1,16 +1,17 @@
-TeLoAdivino v4.1 - Salas Online con Firebase
+TeLoAdivino v4.2 - Salas Online funcionales con Firebase
 
 Incluye:
 - Adivina mi número
 - Adivina mi cumpleaños
-- Compatibilidad mágica
-- Descubre tu vibra
+- Compatibilidad mágica local
+- Descubre tu vibra local
 - Salas online con Firebase Realtime Database
 - Crear sala
-- Unirse por código
-- Link de invitación
-- QR de invitación
-- Participantes sincronizados en tiempo real
+- Unirse por código o QR
+- Lobby con participantes sincronizados en tiempo real
+- Botón Iniciar juego para el anfitrión
+- Compatibilidad mágica online: cada persona responde desde su celular
+- Resultado online automático cuando todos terminan
 
 Archivos útiles:
 - Probar_TeLoAdivino.bat: abre la app localmente para revisar cambios.

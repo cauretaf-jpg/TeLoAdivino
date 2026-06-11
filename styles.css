@@ -352,3 +352,15 @@ h1 span { color: #db2777; }
   .room-participant { grid-template-columns: 30px 1fr; }
   .room-participant small { grid-column: 2; }
 }
+
+/* Online game v4.2 */
+.online-start-panel { display: grid; gap: 12px; padding: 16px; border-radius: 24px; background: rgba(255,255,255,.74); border: 1px solid rgba(190,24,93,.12); box-shadow: var(--soft-shadow); }
+.online-start-panel strong { color: var(--primary-dark); font-size: 18px; }
+.online-start-panel p, .online-start-panel small { color: var(--muted); font-size: 13px; margin: 0; }
+.name-field select { width: 100%; border: 1px solid rgba(190,24,93,.18); border-radius: 16px; padding: 13px 14px; color: var(--primary-dark); font-weight: 850; background: #fff; outline: none; }
+.online-wait-card { display: grid; gap: 12px; text-align: center; padding: 20px; border-radius: 24px; background: rgba(255,255,255,.78); border: 1px solid rgba(190,24,93,.12); box-shadow: var(--soft-shadow); }
+.online-wait-card strong { color: var(--primary-dark); font-size: 20px; }
+.online-wait-card span { color: var(--primary); font-weight: 950; }
+.online-answer-list { display: grid; gap: 8px; }
+.online-answer-list div { display: flex; justify-content: space-between; gap: 10px; padding: 10px 12px; border-radius: 14px; background: rgba(252,231,243,.65); color: var(--primary-dark); font-weight: 800; }
+.online-answer-list small { color: var(--muted); font-weight: 800; }

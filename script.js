@@ -657,12 +657,16 @@ let vibeAnswers = {};
 let activeVibeQuestions = vibeQuestions;
 let lastShareText = '';
 const HISTORY_KEY = 'teloAdivinoHistoryV41';
-const ROOM_KEY = 'teloAdivinoRoomV41';
-const PARTICIPANT_KEY = 'teloAdivinoParticipantIdV41';
+const ROOM_KEY = 'teloAdivinoRoomV42';
+const PARTICIPANT_KEY = 'teloAdivinoParticipantIdV42';
 let currentRoom = null;
 let currentRoomCode = null;
 let roomListenerRef = null;
 let firebaseOnline = Boolean(window.teloFirebaseReady && window.teloDatabase);
+let onlineQuestionIndex = 0;
+let onlineLocalAnswers = [];
+let lastOnlineResultKey = '';
+let lastRenderedOnlineQuestionKey = '';
 
 const screens = ['homeScreen','modeScreen','introScreen','compatSetupScreen','vibeSetupScreen','gameScreen','compatScreen','onlineRoomScreen','roomLobbyScreen','resultScreen','historyScreen','explainScreen'];
 const playCard = document.getElementById('playCard');
@@ -1272,8 +1276,11 @@ function normalizeRoom(snapshotValue, fallbackCode = '') {
     code: value.code || fallbackCode,
     name: value.name || `Sala ${fallbackCode}`,
     host: value.host || 'Anfitrión',
+    hostId: value.hostId || '',
     createdAt: value.createdAt || Date.now(),
+    updatedAt: value.updatedAt || value.createdAt || Date.now(),
     status: value.status || 'lobby',
+    game: value.game || null,
     participants
   };
 }
@@ -1307,7 +1314,7 @@ function listenToRoom(code) {
     }
     currentRoom = normalizeRoom(snapshot.val(), code);
     saveCurrentRoom();
-    renderLobby(false);
+    handleRoomStateChange();
   }, error => {
     console.warn('No se pudo escuchar la sala:', error);
     alert('No se pudo conectar con Firebase. Revisa internet o las reglas de Realtime Database.');
@@ -1350,7 +1357,9 @@ async function createRoom() {
     code,
     name,
     host,
+    hostId: participantId,
     createdAt: now,
+    updatedAt: now,
     status: 'lobby',
     participants: [{ id: participantId, name: host, role: 'Anfitrión', joinedAt: now, lastSeen: now }]
   };
@@ -1361,7 +1370,9 @@ async function createRoom() {
         code,
         name,
         host,
+        hostId: participantId,
         createdAt: now,
+        updatedAt: now,
         status: 'lobby',
         participants: {
           [participantId]: { name: host, role: 'Anfitrión', joinedAt: now, lastSeen: now }
@@ -1463,6 +1474,7 @@ function renderLobby(activateScreen = true) {
       </div>
     `).join('') || '<div class="empty-history">Aún no hay participantes.</div>';
   }
+  updateOnlineStartControls();
   setOnlineStatus(firebaseOnline
     ? 'Sala conectada a Firebase Realtime Database. Los participantes se actualizan en tiempo real.'
     : 'Modo local: Firebase no cargó. Revisa internet o la configuración.');
@@ -1477,8 +1489,276 @@ async function clearCurrentRoom() {
   }
   currentRoom = null;
   currentRoomCode = null;
+  onlineQuestionIndex = 0;
+  onlineLocalAnswers = [];
+  lastOnlineResultKey = '';
+  lastRenderedOnlineQuestionKey = '';
   localStorage.removeItem(ROOM_KEY);
   openOnlineRoom();
+}
+
+
+function getCurrentParticipant() {
+  const id = getParticipantId();
+  return currentRoom?.participants?.find(participant => participant.id === id) || null;
+}
+
+function getActiveOnlineParticipants() {
+  return (currentRoom?.participants || []).filter(participant => (participant.role || '').toLowerCase() !== 'manual');
+}
+
+function updateOnlineStartControls() {
+  const button = document.getElementById('startOnlineCompatibilityBtn');
+  const hint = document.getElementById('onlineStartHint');
+  const select = document.getElementById('onlineCompatibilityModeSelect');
+  if (!button || !hint) return;
+  const activeParticipants = getActiveOnlineParticipants();
+  const ownId = getParticipantId();
+  const isHost = !currentRoom?.hostId || currentRoom.hostId === ownId;
+  const canStart = Boolean(firebaseOnline && currentRoom?.code && activeParticipants.length >= 2 && isHost && currentRoom.status !== 'playing');
+  button.disabled = !canStart;
+  if (select) select.disabled = currentRoom?.status === 'playing';
+  if (!firebaseOnline) hint.textContent = 'Firebase no está conectado. Revisa internet y vuelve a cargar.';
+  else if (!isHost) hint.textContent = 'Solo la persona anfitriona puede iniciar el juego.';
+  else if (activeParticipants.length < 2) hint.textContent = 'Necesitas al menos 2 participantes conectados desde sus celulares.';
+  else if (currentRoom?.status === 'playing') hint.textContent = 'La partida ya está iniciada.';
+  else hint.textContent = 'Cuando estén todas las personas, inicia Compatibilidad mágica online.';
+}
+
+function handleRoomStateChange(force = false) {
+  if (!currentRoom) return;
+  if (currentRoom.status === 'playing' && currentRoom.game?.type === 'compatibility') {
+    renderOnlineCompatibility(force);
+    return;
+  }
+  lastOnlineResultKey = '';
+  lastRenderedOnlineQuestionKey = '';
+  renderLobby(false);
+}
+
+async function startOnlineCompatibilityGame() {
+  if (!firebaseOnline || !currentRoom?.code) {
+    alert('Firebase no está conectado. Recarga la página e intenta nuevamente.');
+    return;
+  }
+  const activeParticipants = getActiveOnlineParticipants();
+  if (activeParticipants.length < 2) {
+    alert('Necesitas al menos 2 participantes conectados desde sus celulares.');
+    return;
+  }
+  const ownId = getParticipantId();
+  if (currentRoom.hostId && currentRoom.hostId !== ownId) {
+    alert('Solo la persona anfitriona puede iniciar el juego.');
+    return;
+  }
+  const mode = document.getElementById('onlineCompatibilityModeSelect')?.value || 'actual';
+  const questions = pickRandomQuestions(compatibilityQuestionSets[mode] || compatibilityQuestionSets.actual, 10);
+  onlineQuestionIndex = 0;
+  onlineLocalAnswers = [];
+  lastOnlineResultKey = '';
+  lastRenderedOnlineQuestionKey = '';
+  try {
+    await getRoomRef(currentRoom.code).update({
+      status: 'playing',
+      updatedAt: Date.now(),
+      game: {
+        type: 'compatibility',
+        mode,
+        startedAt: Date.now(),
+        questions,
+        answers: {}
+      }
+    });
+  } catch (error) {
+    console.warn('No se pudo iniciar el juego online:', error);
+    alert('No se pudo iniciar el juego. Revisa la conexión o las reglas de Firebase.');
+  }
+}
+
+function getOnlineModeLabel(mode) {
+  return ({ actual: 'Actual', coqueta: 'Coqueta', profunda: 'Íntima y profunda', atrevida: 'Atrevida' })[mode] || 'Actual';
+}
+
+function getOnlineQuestionSet() {
+  return currentRoom?.game?.questions || [];
+}
+
+function getOnlineAnswersObj() {
+  return currentRoom?.game?.answers || {};
+}
+
+function renderOnlineCompatibility(force = false) {
+  const game = currentRoom?.game;
+  if (!game || game.type !== 'compatibility') return;
+  const participant = getCurrentParticipant();
+  const options = document.getElementById('onlineGameOptions');
+  const dots = document.getElementById('onlineGameProgressDots');
+  const pill = document.getElementById('onlineGamePill');
+  const eyebrow = document.getElementById('onlineGameEyebrow');
+  const title = document.getElementById('onlineGameTitle');
+  const help = document.getElementById('onlineGameHelp');
+  if (!options || !dots || !pill || !eyebrow || !title || !help) return;
+
+  const questions = getOnlineQuestionSet();
+  const activeParticipants = getActiveOnlineParticipants();
+  const answers = getOnlineAnswersObj();
+  const completed = activeParticipants.filter(p => Array.isArray(answers[p.id]) && answers[p.id].length >= questions.length);
+
+  if (!participant) {
+    showScreen('onlineGameScreen');
+    pill.textContent = `Sala ${currentRoom.code}`;
+    eyebrow.textContent = 'Participante no registrado';
+    title.textContent = 'Únete a la sala para jugar';
+    help.textContent = 'Abre el link de invitación, escribe tu nombre y presiona Unirse a sala.';
+    options.innerHTML = '<button class="primary-button" id="goJoinFromGameBtn">Unirme a la sala</button>';
+    dots.innerHTML = '';
+    document.getElementById('goJoinFromGameBtn')?.addEventListener('click', openOnlineRoom);
+    return;
+  }
+
+  if (!questions.length) {
+    showScreen('onlineGameScreen');
+    pill.textContent = 'Preparando';
+    eyebrow.textContent = 'Juego online';
+    title.textContent = 'Preparando preguntas';
+    help.textContent = 'Espera unos segundos.';
+    options.innerHTML = '';
+    dots.innerHTML = '';
+    return;
+  }
+
+  const myAnswers = Array.isArray(answers[participant.id]) ? answers[participant.id] : onlineLocalAnswers;
+  if (myAnswers.length >= questions.length) {
+    if (completed.length >= activeParticipants.length) {
+      showOnlineCompatibilityResult();
+      return;
+    }
+    showScreen('onlineGameScreen');
+    pill.textContent = `Sala ${currentRoom.code}`;
+    eyebrow.textContent = `${getOnlineModeLabel(game.mode)} · respuestas guardadas`;
+    title.textContent = 'Esperando al resto';
+    help.textContent = 'Tus respuestas ya quedaron guardadas. El resultado aparecerá cuando todas las personas terminen.';
+    options.innerHTML = `
+      <div class="online-wait-card">
+        <strong>${completed.length} de ${activeParticipants.length} personas listas</strong>
+        <div class="online-answer-list">
+          ${activeParticipants.map(p => `<div><span>${p.name}</span><small>${Array.isArray(answers[p.id]) && answers[p.id].length >= questions.length ? 'Listo' : 'Pendiente'}</small></div>`).join('')}
+        </div>
+      </div>`;
+    dots.innerHTML = '';
+    return;
+  }
+
+  onlineQuestionIndex = Math.min(myAnswers.length, questions.length - 1);
+  const renderKey = `${currentRoom.code}:${game.startedAt}:${participant.id}:${onlineQuestionIndex}:${myAnswers.length}`;
+  if (!force && lastRenderedOnlineQuestionKey === renderKey && document.getElementById('onlineGameScreen')?.classList.contains('active')) return;
+  lastRenderedOnlineQuestionKey = renderKey;
+
+  const question = questions[onlineQuestionIndex];
+  showScreen('onlineGameScreen');
+  pill.textContent = `${participant.name} · ${onlineQuestionIndex + 1} de ${questions.length}`;
+  eyebrow.textContent = `Compatibilidad ${getOnlineModeLabel(game.mode)}`;
+  title.textContent = question.question;
+  help.textContent = 'Responde desde tu celular. Nadie verá tus respuestas.';
+  options.innerHTML = question.options.map((option, index) => `
+    <button class="compat-option" data-online-index="${index}">
+      <span>${index + 1}</span>
+      <strong>${option.text}</strong>
+    </button>
+  `).join('');
+  options.querySelectorAll('[data-online-index]').forEach(button => {
+    button.addEventListener('click', () => answerOnlineCompatibility(Number(button.dataset.onlineIndex)));
+  });
+  dots.innerHTML = questions.map((_, index) => {
+    const className = index < myAnswers.length ? 'dot done' : index === onlineQuestionIndex ? 'dot current' : 'dot';
+    return `<span class="${className}"></span>`;
+  }).join('');
+}
+
+async function answerOnlineCompatibility(optionIndex) {
+  const participant = getCurrentParticipant();
+  if (!firebaseOnline || !currentRoom?.code || !participant) return;
+  const questions = getOnlineQuestionSet();
+  const answers = getOnlineAnswersObj();
+  const existing = Array.isArray(answers[participant.id]) ? [...answers[participant.id]] : [...onlineLocalAnswers];
+  if (existing.length >= questions.length) return;
+  existing.push(optionIndex);
+  onlineLocalAnswers = existing;
+  try {
+    await getRoomRef(currentRoom.code).child(`game/answers/${participant.id}`).set(existing);
+  } catch (error) {
+    console.warn('No se pudo guardar la respuesta:', error);
+    alert('No se pudo guardar tu respuesta. Revisa internet e intenta nuevamente.');
+  }
+  renderOnlineCompatibility(true);
+}
+
+function scoreOnlinePair(personA, personB, questions, answers) {
+  let score = 0;
+  const vibeCounter = {};
+  questions.forEach((question, index) => {
+    const answerOne = question.options[answers[personA.id]?.[index]];
+    const answerTwo = question.options[answers[personB.id]?.[index]];
+    if (!answerOne || !answerTwo) return;
+    const weight = question.weight || 10;
+    let earned = Math.round(weight * 0.35);
+    if (answerOne.vibe === answerTwo.vibe) earned = weight;
+    else if ((compatibleVibes[answerOne.vibe] || []).includes(answerTwo.vibe)) earned = Math.round(weight * 0.75);
+    score += earned;
+    vibeCounter[answerOne.vibe] = (vibeCounter[answerOne.vibe] || 0) + 1;
+    vibeCounter[answerTwo.vibe] = (vibeCounter[answerTwo.vibe] || 0) + 1;
+  });
+  const dominantVibe = Object.entries(vibeCounter).sort((a, b) => b[1] - a[1])[0]?.[0] || 'misterio';
+  return { personA, personB, score: Math.max(25, Math.min(100, score)), dominantVibe };
+}
+
+function getOnlinePairs() {
+  const questions = getOnlineQuestionSet();
+  const answers = getOnlineAnswersObj();
+  const activeParticipants = getActiveOnlineParticipants().filter(p => Array.isArray(answers[p.id]) && answers[p.id].length >= questions.length);
+  const pairs = [];
+  for (let a = 0; a < activeParticipants.length; a += 1) {
+    for (let b = a + 1; b < activeParticipants.length; b += 1) {
+      pairs.push(scoreOnlinePair(activeParticipants[a], activeParticipants[b], questions, answers));
+    }
+  }
+  return pairs.sort((a, b) => b.score - a.score);
+}
+
+function renderOnlineLeaderboard(pairs) {
+  return pairs.slice(0, 10).map((pair, index) => `
+    <div class="match-row ${index === 0 ? 'best-match' : ''}">
+      <strong>${index === 0 ? 'Mejor match' : 'Match'}: ${pair.personA.name} + ${pair.personB.name}</strong>
+      <span>${pair.score}%</span>
+    </div>
+  `).join('');
+}
+
+function showOnlineCompatibilityResult() {
+  const game = currentRoom?.game;
+  const resultKey = `${currentRoom?.code}:${game?.startedAt}:result`;
+  if (lastOnlineResultKey === resultKey && document.getElementById('resultScreen')?.classList.contains('active')) return;
+  lastOnlineResultKey = resultKey;
+  const previousMode = selectedCompatibilityMode;
+  selectedCompatibilityMode = game?.mode || 'actual';
+  const pairs = getOnlinePairs();
+  const best = pairs[0];
+  if (!best) return;
+  const message = getCompatibilityMessage(best.score, best.dominantVibe);
+  selectedCompatibilityMode = previousMode;
+  resultTitle.textContent = message.title;
+  resultCopy.textContent = `${getOnlineModeLabel(game.mode)} online · ${best.personA.name} + ${best.personB.name} · ${message.type}`;
+  resultValue.className = 'result-number compatibility-result';
+  resultValue.textContent = `${best.score}%`;
+  resultNote.innerHTML = `
+    <div class="compat-result-stack">
+      <section class="reading-card"><strong>Lectura del match online</strong><p>${message.reading}</p></section>
+      <section class="match-board"><strong>Ranking de afinidad</strong>${renderOnlineLeaderboard(pairs)}</section>
+      <section class="reading-card"><strong>Sala</strong><p>Código ${currentRoom.code}. Puedes cerrar la sala o volver al inicio para jugar otra vez.</p></section>
+    </div>
+  `;
+  lastShareText = `Resultado de TeLoAdivino ✨\n\nModo online: ${getOnlineModeLabel(game.mode)}\nMejor match: ${best.personA.name} + ${best.personB.name}\nCompatibilidad mágica: ${best.score}%\nTipo de conexión: ${message.type}\n\n“${message.reading}”\n\nRanking:\n${pairs.slice(0, 5).map((pair, index) => `${index + 1}. ${pair.personA.name} + ${pair.personB.name} — ${pair.score}%`).join('\n')}`;
+  showScreen('resultScreen');
 }
 
 function copyText(value) {
@@ -1557,6 +1837,9 @@ document.getElementById('joinRoomBtn')?.addEventListener('click', joinRoom);
 document.getElementById('addManualParticipantBtn')?.addEventListener('click', addManualParticipant);
 document.getElementById('copyRoomCodeBtn')?.addEventListener('click', () => copyText(currentRoom?.code));
 document.getElementById('copyInviteLinkBtn')?.addEventListener('click', () => copyText(document.getElementById('inviteLinkInput')?.value));
+document.getElementById('startOnlineCompatibilityBtn')?.addEventListener('click', startOnlineCompatibilityGame);
+document.getElementById('backLobbyFromOnlineGameBtn')?.addEventListener('click', () => renderLobby(true));
+document.getElementById('onlineGameRefreshBtn')?.addEventListener('click', () => handleRoomStateChange(true));
 
 document.getElementById('chooseModeBtn').addEventListener('click', openModes);
 document.getElementById('historyBtn')?.addEventListener('click', openHistory);
@@ -1607,7 +1890,10 @@ document.getElementById('resetCompatBtn').addEventListener('click', () => { sele
 document.getElementById('yesBtn').addEventListener('click', () => answer(true));
 document.getElementById('noBtn').addEventListener('click', () => answer(false));
 document.getElementById('resetBtn').addEventListener('click', resetCurrentGame);
-document.getElementById('playAgainBtn').addEventListener('click', startSelectedMode);
+document.getElementById('playAgainBtn').addEventListener('click', () => {
+  if (currentRoom?.status === 'playing') { renderLobby(true); return; }
+  startSelectedMode();
+});
 document.getElementById('changeModeBtn').addEventListener('click', openModes);
 document.getElementById('backFromExplainBtn').addEventListener('click', backFromExplanation);
 document.getElementById('explainPlayBtn').addEventListener('click', openModes);

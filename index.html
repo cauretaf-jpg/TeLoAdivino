@@ -309,8 +309,40 @@
           <strong>Participantes conectados</strong>
           <div id="roomParticipantsList" class="room-participants-list"></div>
         </section>
+
+        <section class="online-start-panel">
+          <strong>Juego online</strong>
+          <p>Por ahora las salas online inician con Compatibilidad mágica. Cada persona responde desde su celular.</p>
+          <label class="name-field">
+            <span>Modo de compatibilidad</span>
+            <select id="onlineCompatibilityModeSelect">
+              <option value="actual">Actual</option>
+              <option value="coqueta">Coqueta</option>
+              <option value="profunda">Íntima y profunda</option>
+              <option value="atrevida">Atrevida</option>
+            </select>
+          </label>
+          <button class="primary-button" id="startOnlineCompatibilityBtn">Iniciar juego</button>
+          <small id="onlineStartHint">Necesitas al menos 2 participantes conectados.</small>
+        </section>
+
         <p class="online-note">Sala conectada a Firebase Realtime Database. Los participantes se actualizan en tiempo real.</p>
       </article>
+    </section>
+
+    <section id="onlineGameScreen" class="screen">
+      <div class="topbar">
+        <button class="icon-button" id="backLobbyFromOnlineGameBtn" aria-label="Volver">←</button>
+        <div class="step-pill" id="onlineGamePill">Juego online</div>
+        <button class="icon-button ghost" id="onlineGameRefreshBtn" aria-label="Actualizar">↻</button>
+      </div>
+      <div class="question-block compatibility-heading">
+        <p class="eyebrow" id="onlineGameEyebrow">Compatibilidad online</p>
+        <h2 id="onlineGameTitle">Esperando juego</h2>
+        <p class="subtitle" id="onlineGameHelp">Cada participante responde desde su propio celular.</p>
+      </div>
+      <div class="compat-options" id="onlineGameOptions"></div>
+      <div class="progress-dots" id="onlineGameProgressDots"></div>
     </section>
 
     <section id="resultScreen" class="screen">
