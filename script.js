@@ -668,7 +668,7 @@ let onlineLocalAnswers = [];
 let lastOnlineResultKey = '';
 let lastRenderedOnlineQuestionKey = '';
 
-const screens = ['homeScreen','modeScreen','introScreen','compatSetupScreen','vibeSetupScreen','gameScreen','compatScreen','onlineRoomScreen','roomLobbyScreen','resultScreen','historyScreen','explainScreen'];
+const screens = ['homeScreen','modeScreen','introScreen','compatSetupScreen','vibeSetupScreen','gameScreen','compatScreen','onlineRoomScreen','roomLobbyScreen','onlineGameScreen','resultScreen','historyScreen','explainScreen'];
 const playCard = document.getElementById('playCard');
 const stepPill = document.getElementById('stepPill');
 const progressDots = document.getElementById('progressDots');
@@ -1528,6 +1528,10 @@ function updateOnlineStartControls() {
 function handleRoomStateChange(force = false) {
   if (!currentRoom) return;
   if (currentRoom.status === 'playing' && currentRoom.game?.type === 'compatibility') {
+    if (currentRoom.game.result) {
+      showOnlineCompatibilityResult(currentRoom.game.result);
+      return;
+    }
     renderOnlineCompatibility(force);
     return;
   }
@@ -1630,7 +1634,9 @@ function renderOnlineCompatibility(force = false) {
   const myAnswers = Array.isArray(answers[participant.id]) ? answers[participant.id] : onlineLocalAnswers;
   if (myAnswers.length >= questions.length) {
     if (completed.length >= activeParticipants.length) {
-      showOnlineCompatibilityResult();
+      publishOnlineCompatibilityResultIfReady();
+      if (currentRoom.game?.result) showOnlineCompatibilityResult(currentRoom.game.result);
+      else renderOnlineResultPending(completed.length, activeParticipants.length);
       return;
     }
     showScreen('onlineGameScreen');
@@ -1734,30 +1740,115 @@ function renderOnlineLeaderboard(pairs) {
   `).join('');
 }
 
-function showOnlineCompatibilityResult() {
-  const game = currentRoom?.game;
-  const resultKey = `${currentRoom?.code}:${game?.startedAt}:result`;
-  if (lastOnlineResultKey === resultKey && document.getElementById('resultScreen')?.classList.contains('active')) return;
-  lastOnlineResultKey = resultKey;
+function renderOnlineResultPending(done, total) {
+  showScreen('onlineGameScreen');
+  const pill = document.getElementById('onlineGamePill');
+  const eyebrow = document.getElementById('onlineGameEyebrow');
+  const title = document.getElementById('onlineGameTitle');
+  const help = document.getElementById('onlineGameHelp');
+  const options = document.getElementById('onlineGameOptions');
+  const dots = document.getElementById('onlineGameProgressDots');
+  if (pill) pill.textContent = `Sala ${currentRoom?.code || ''}`;
+  if (eyebrow) eyebrow.textContent = 'Calculando resultado';
+  if (title) title.textContent = 'Resultado casi listo';
+  if (help) help.textContent = 'Todas las personas terminaron. La sala está sincronizando el resultado para todos.';
+  if (options) options.innerHTML = `<div class="online-wait-card"><strong>${done} de ${total} personas listas</strong><p>Espera unos segundos.</p></div>`;
+  if (dots) dots.innerHTML = '';
+}
+
+async function publishOnlineCompatibilityResultIfReady() {
+  if (!firebaseOnline || !currentRoom?.code || currentRoom.game?.result) return;
+  const questions = getOnlineQuestionSet();
+  const answers = getOnlineAnswersObj();
+  const activeParticipants = getActiveOnlineParticipants();
+  if (!questions.length || activeParticipants.length < 2) return;
+  const completed = activeParticipants.filter(p => Array.isArray(answers[p.id]) && answers[p.id].length >= questions.length);
+  if (completed.length < activeParticipants.length) return;
+
   const previousMode = selectedCompatibilityMode;
-  selectedCompatibilityMode = game?.mode || 'actual';
+  selectedCompatibilityMode = currentRoom.game?.mode || 'actual';
   const pairs = getOnlinePairs();
   const best = pairs[0];
-  if (!best) return;
+  if (!best) {
+    selectedCompatibilityMode = previousMode;
+    return;
+  }
   const message = getCompatibilityMessage(best.score, best.dominantVibe);
   selectedCompatibilityMode = previousMode;
+  const resultPayload = {
+    createdAt: Date.now(),
+    mode: currentRoom.game?.mode || 'actual',
+    message,
+    best: {
+      score: best.score,
+      dominantVibe: best.dominantVibe,
+      personA: { id: best.personA.id, name: best.personA.name },
+      personB: { id: best.personB.id, name: best.personB.name }
+    },
+    pairs: pairs.slice(0, 20).map(pair => ({
+      score: pair.score,
+      dominantVibe: pair.dominantVibe,
+      personA: { id: pair.personA.id, name: pair.personA.name },
+      personB: { id: pair.personB.id, name: pair.personB.name }
+    }))
+  };
+
+  try {
+    await getRoomRef(currentRoom.code).child('game/result').transaction(current => current || resultPayload);
+  } catch (error) {
+    console.warn('No se pudo publicar el resultado online:', error);
+  }
+}
+
+function showOnlineCompatibilityResult(persistedResult = null) {
+  const game = currentRoom?.game;
+  const result = persistedResult || game?.result;
+  const resultKey = `${currentRoom?.code}:${game?.startedAt}:result:${result?.createdAt || 'local'}`;
+  if (lastOnlineResultKey === resultKey && document.getElementById('resultScreen')?.classList.contains('active')) return;
+  lastOnlineResultKey = resultKey;
+
+  let pairs = result?.pairs || [];
+  let best = result?.best || null;
+  let message = result?.message || null;
+
+  if (!best || !message) {
+    const previousMode = selectedCompatibilityMode;
+    selectedCompatibilityMode = game?.mode || 'actual';
+    pairs = getOnlinePairs();
+    const localBest = pairs[0];
+    if (!localBest) {
+      selectedCompatibilityMode = previousMode;
+      return;
+    }
+    message = getCompatibilityMessage(localBest.score, localBest.dominantVibe);
+    best = {
+      score: localBest.score,
+      dominantVibe: localBest.dominantVibe,
+      personA: { id: localBest.personA.id, name: localBest.personA.name },
+      personB: { id: localBest.personB.id, name: localBest.personB.name }
+    };
+    selectedCompatibilityMode = previousMode;
+  }
+
+  const renderPersistedLeaderboard = (items) => (items || []).slice(0, 10).map((pair, index) => `
+    <div class="match-row ${index === 0 ? 'best-match' : ''}">
+      <strong>${index === 0 ? 'Mejor match' : 'Match'}: ${pair.personA.name} + ${pair.personB.name}</strong>
+      <span>${pair.score}%</span>
+    </div>
+  `).join('');
+
   resultTitle.textContent = message.title;
-  resultCopy.textContent = `${getOnlineModeLabel(game.mode)} online · ${best.personA.name} + ${best.personB.name} · ${message.type}`;
+  resultCopy.textContent = `${getOnlineModeLabel(result?.mode || game?.mode)} online · ${best.personA.name} + ${best.personB.name} · ${message.type}`;
   resultValue.className = 'result-number compatibility-result';
   resultValue.textContent = `${best.score}%`;
   resultNote.innerHTML = `
     <div class="compat-result-stack">
       <section class="reading-card"><strong>Lectura del match online</strong><p>${message.reading}</p></section>
-      <section class="match-board"><strong>Ranking de afinidad</strong>${renderOnlineLeaderboard(pairs)}</section>
-      <section class="reading-card"><strong>Sala</strong><p>Código ${currentRoom.code}. Puedes cerrar la sala o volver al inicio para jugar otra vez.</p></section>
+      <section class="match-board"><strong>Ranking de afinidad</strong>${renderPersistedLeaderboard(pairs)}</section>
+      <section class="reading-card"><strong>Sala</strong><p>Código ${currentRoom.code}. Este resultado quedó sincronizado para todas las personas conectadas.</p></section>
     </div>
   `;
-  lastShareText = `Resultado de TeLoAdivino ✨\n\nModo online: ${getOnlineModeLabel(game.mode)}\nMejor match: ${best.personA.name} + ${best.personB.name}\nCompatibilidad mágica: ${best.score}%\nTipo de conexión: ${message.type}\n\n“${message.reading}”\n\nRanking:\n${pairs.slice(0, 5).map((pair, index) => `${index + 1}. ${pair.personA.name} + ${pair.personB.name} — ${pair.score}%`).join('\n')}`;
+  lastShareText = `Resultado de TeLoAdivino ✨\n\nModo online: ${getOnlineModeLabel(result?.mode || game?.mode)}\nMejor match: ${best.personA.name} + ${best.personB.name}\nCompatibilidad mágica: ${best.score}%\nTipo de conexión: ${message.type}\n\n“${message.reading}”\n\nRanking:\n${(pairs || []).slice(0, 5).map((pair, index) => `${index + 1}. ${pair.personA.name} + ${pair.personB.name} — ${pair.score}%`).join('\n')}`;
   showScreen('resultScreen');
 }
 

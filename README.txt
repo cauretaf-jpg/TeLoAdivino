@@ -35,3 +35,6 @@ Reglas beta recomendadas para probar:
 
 Nota:
 Estas reglas son para beta. Más adelante conviene endurecer seguridad, expiración de salas y limpieza automática.
+
+
+TeLoAdivino v4.3: corrige sincronización del resultado online para que todos los participantes vean el resultado. El resultado se publica en Firebase en game/result y todos los celulares lo renderizan desde la misma fuente.
