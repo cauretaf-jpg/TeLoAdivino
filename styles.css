@@ -1706,3 +1706,163 @@ body {
   .secondary-button,
   .icon-button { animation: none !important; transition: none !important; }
 }
+
+
+/* v7.1 - Corrección visual definitiva del menú principal
+   Diagnóstico:
+   - En v7.0 se reutilizó .mode-card::after para etiquetas como "Sala con QR".
+   - Pero .mode-card::after ya venía de versiones anteriores como barra lateral absoluta
+     (position:absolute; inset:0; width:6px). Al cambiarle solo el content,
+     el pseudo-elemento heredó tamaños/posición incorrectos y terminó como una mancha grande.
+   Corrección:
+   - Las tarjetas vuelven a usar un layout compacto y estable.
+   - El ícono queda fijo en 58x58 px.
+   - La etiqueta inferior deja de ser absoluta y pasa al flujo normal de la tarjeta.
+   - La barra de color ahora se dibuja con border-left, no con pseudo-elementos conflictivos.
+*/
+
+#modeScreen .mode-grid.compact {
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  gap: 12px !important;
+}
+
+#modeScreen .mode-card {
+  position: relative !important;
+  display: grid !important;
+  grid-template-columns: 58px minmax(0, 1fr) !important;
+  grid-template-rows: auto auto auto !important;
+  grid-template-areas:
+    "icon title"
+    "icon desc"
+    "icon tag" !important;
+  align-items: center !important;
+  column-gap: 14px !important;
+  row-gap: 4px !important;
+  min-height: auto !important;
+  padding: 16px 16px 16px 18px !important;
+  border-radius: 26px !important;
+  overflow: visible !important;
+  text-align: left !important;
+  border-left: 6px solid var(--category-compat) !important;
+}
+
+#modeScreen .mode-card[data-mode="number"],
+#modeScreen .mode-card[data-mode="birthday"] { border-left-color: var(--category-warning) !important; }
+#modeScreen .mode-card[data-mode="compatibility"],
+#modeScreen .mode-card[data-mode="pair"] { border-left-color: var(--category-compat) !important; }
+#modeScreen .mode-card[data-mode="vibe"] { border-left-color: var(--category-vibe) !important; }
+#modeScreen .mode-card[data-mode="online"] { border-left-color: var(--category-online) !important; }
+#modeScreen .mode-card[data-mode="bottle"],
+#modeScreen .mode-card[data-mode="truth"] { border-left-color: var(--category-group) !important; }
+#modeScreen .mode-card[data-mode="likely"] { border-left-color: var(--category-success) !important; }
+
+#modeScreen .mode-card .mode-icon {
+  grid-area: icon !important;
+  width: 58px !important;
+  height: 58px !important;
+  min-width: 58px !important;
+  min-height: 58px !important;
+  max-width: 58px !important;
+  max-height: 58px !important;
+  border-radius: 18px !important;
+  display: grid !important;
+  place-items: center !important;
+  font-size: 28px !important;
+  line-height: 1 !important;
+  aspect-ratio: 1 / 1 !important;
+  overflow: hidden !important;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.85), 0 10px 22px rgba(122,20,76,.10) !important;
+}
+
+#modeScreen .mode-card strong {
+  grid-area: title !important;
+  display: block !important;
+  align-self: end !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  font-size: 18px !important;
+  line-height: 1.15 !important;
+  color: var(--primary-dark) !important;
+}
+
+#modeScreen .mode-card small {
+  grid-area: desc !important;
+  display: block !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  font-size: 14px !important;
+  line-height: 1.35 !important;
+  color: var(--muted) !important;
+}
+
+/* Etiqueta informativa: ya no es una barra absoluta ni un círculo gigante. */
+#modeScreen .mode-card::after {
+  position: static !important;
+  inset: auto !important;
+  grid-area: tag !important;
+  align-self: start !important;
+  justify-self: start !important;
+  display: inline-flex !important;
+  width: auto !important;
+  max-width: 100% !important;
+  height: auto !important;
+  min-height: 0 !important;
+  margin: 6px 0 0 0 !important;
+  padding: 5px 9px !important;
+  border-radius: 999px !important;
+  transform: none !important;
+  font-size: 11px !important;
+  line-height: 1 !important;
+  font-weight: 900 !important;
+  color: #fff !important;
+  background: linear-gradient(135deg, rgba(236,72,153,.92), rgba(139,92,246,.92)) !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  white-space: nowrap !important;
+  pointer-events: none !important;
+}
+
+#modeScreen .mode-card[data-mode="number"]::after,
+#modeScreen .mode-card[data-mode="birthday"]::after { content: "Adivinanza" !important; }
+#modeScreen .mode-card[data-mode="compatibility"]::after { content: "Match grupal" !important; }
+#modeScreen .mode-card[data-mode="vibe"]::after { content: "Mapa de energía" !important; }
+#modeScreen .mode-card[data-mode="pair"]::after { content: "Para 2 personas" !important; }
+#modeScreen .mode-card[data-mode="online"]::after { content: "Sala con QR" !important; background: var(--category-online) !important; }
+#modeScreen .mode-card[data-mode="bottle"]::after { content: "Ruleta real" !important; background: var(--category-group) !important; }
+#modeScreen .mode-card[data-mode="truth"]::after { content: "Cartas visuales" !important; background: var(--category-group) !important; }
+#modeScreen .mode-card[data-mode="likely"]::after { content: "Votación grupal" !important; background: var(--category-success) !important; }
+
+#modeScreen .mode-section-title {
+  position: static !important;
+  top: auto !important;
+  z-index: auto !important;
+}
+
+#modeScreen .section-heading {
+  margin-bottom: 18px !important;
+}
+
+#modeScreen .mode-section {
+  margin-bottom: 18px !important;
+}
+
+@media (max-width: 380px) {
+  #modeScreen .mode-card {
+    grid-template-columns: 52px minmax(0, 1fr) !important;
+    column-gap: 12px !important;
+    padding: 14px !important;
+    border-radius: 22px !important;
+  }
+  #modeScreen .mode-card .mode-icon {
+    width: 52px !important;
+    height: 52px !important;
+    min-width: 52px !important;
+    min-height: 52px !important;
+    max-width: 52px !important;
+    max-height: 52px !important;
+    font-size: 24px !important;
+  }
+  #modeScreen .mode-card strong { font-size: 16px !important; }
+  #modeScreen .mode-card small { font-size: 13px !important; }
+}

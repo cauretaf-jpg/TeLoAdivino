@@ -1,0 +1,13 @@
+Diagnóstico visual v7.1
+
+El error mostrado en la captura se debe a una colisión CSS:
+1. En versiones anteriores, .mode-card::after era una barra lateral absoluta.
+2. En v7.0, ese mismo pseudo-elemento se reutilizó para mostrar textos como “Sala con QR”, “Ruleta real”, “Cartas visuales” y “Votación grupal”.
+3. Como heredaba position:absolute, inset y tamaños de la barra antigua, las etiquetas se transformaban visualmente en manchas/círculos grandes que tapaban el contenido.
+
+Corrección aplicada:
+- .mode-card ahora usa layout grid estable de dos columnas: icono + contenido.
+- .mode-icon queda limitado a 58x58 px.
+- .mode-card::after queda como etiqueta pequeña dentro del flujo normal.
+- El color de categoría se controla con border-left, no con pseudo-elementos absolutos.
+- Se desactiva sticky en títulos de sección para evitar montajes visuales durante scroll.
