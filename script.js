@@ -721,6 +721,8 @@ let activePairQuestions = [];
 let roomHeartbeatTimer = null;
 const THEME_KEY = 'teloAdivinoThemeV51';
 const ACHIEVEMENTS_KEY = 'teloAdivinoAchievementsV51';
+const ONBOARDING_KEY = 'teloAdivinoOnboardingV70';
+const TELO_VERSION = '7.0';
 
 const screens = ['homeScreen','modeScreen','introScreen','compatSetupScreen','vibeSetupScreen','bottleSetupScreen','bottleGameScreen','truthSetupScreen','truthGameScreen','likelySetupScreen','likelyGameScreen','pairSetupScreen','pairGameScreen','gameScreen','compatScreen','onlineRoomScreen','roomLobbyScreen','onlineGameScreen','resultScreen','achievementsScreen','historyScreen','explainScreen'];
 const playCard = document.getElementById('playCard');
@@ -753,8 +755,90 @@ const achievementDefinitions = [
   { id: 'likely', icon: '🏆', title: 'Ranking de la noche', text: 'Jugaste ¿Quién es más probable?' },
   { id: 'pair', icon: '❤️', title: 'Modo parejas', text: 'Jugaste ¿Qué tanto se conocen?' },
   { id: 'share', icon: '📲', title: 'Resultado compartido', text: 'Usaste una función de compartir.' },
-  { id: 'theme', icon: '🎨', title: 'Cambio de look', text: 'Cambiaste el tema visual de la app.' }
+  { id: 'theme', icon: '🎨', title: 'Cambio de look', text: 'Cambiaste el tema visual de la app.' },
+  { id: 'online_room', icon: '🌐', title: 'Sala abierta', text: 'Creaste o entraste a una sala online.' },
+  { id: 'night_summary', icon: '🏁', title: 'Noche registrada', text: 'Generaste un resumen o ranking de la noche.' }
 ];
+
+
+const avatarPool = ['😎','😊','🦊','🐼','🦁','🐸','🐱','🐶','🦄','🐧','🌙','🔥','✨','🍓','🍀','🎧','🎮','💘','🍾','🎲','🏆','🧃','🪩','🌈'];
+const onboardingSlides = [
+  { icon: '✨', title: 'Bienvenido a TeLoAdivino', text: 'Elige un juego, agrega participantes y juega en el mismo celular o en salas con QR.' },
+  { icon: '🌐', title: 'Salas con QR', text: 'Crea una sala, comparte el código y todos podrán jugar desde su propio celular.' },
+  { icon: '🎉', title: 'Juegos de grupo', text: 'Botellita, Verdad o Reto y ¿Quién es más probable? están pensados para reuniones y fiestas.' },
+  { icon: '🏆', title: 'Resultados y logros', text: 'Guarda rankings locales, desbloquea logros y comparte resultados cuando termine la partida.' }
+];
+let onboardingIndex = 0;
+let audioContext = null;
+
+function getAvatarForName(name = '', index = 0) {
+  const clean = String(name || '').trim();
+  let code = index * 7;
+  for (const char of clean) code += char.charCodeAt(0);
+  return avatarPool[Math.abs(code) % avatarPool.length];
+}
+
+function playSound(type = 'tap') {
+  try {
+    audioContext = audioContext || new (window.AudioContext || window.webkitAudioContext)();
+    const oscillator = audioContext.createOscillator();
+    const gain = audioContext.createGain();
+    const now = audioContext.currentTime;
+    const freq = { tap: 440, yes: 660, no: 220, result: 880, spin: 330, success: 720 }[type] || 440;
+    oscillator.type = type === 'spin' ? 'sawtooth' : 'sine';
+    oscillator.frequency.setValueAtTime(freq, now);
+    if (type === 'spin') oscillator.frequency.exponentialRampToValueAtTime(90, now + .35);
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.exponentialRampToValueAtTime(type === 'spin' ? 0.05 : 0.07, now + .015);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + (type === 'spin' ? .38 : .16));
+    oscillator.connect(gain);
+    gain.connect(audioContext.destination);
+    oscillator.start(now);
+    oscillator.stop(now + (type === 'spin' ? .42 : .18));
+  } catch {}
+}
+
+function showOnboarding(force = false) {
+  const overlay = document.getElementById('onboardingOverlay');
+  if (!overlay) return;
+  if (!force && localStorage.getItem(ONBOARDING_KEY) === 'done') return;
+  onboardingIndex = 0;
+  renderOnboarding();
+  overlay.classList.remove('hidden');
+}
+
+function renderOnboarding() {
+  const slide = onboardingSlides[onboardingIndex] || onboardingSlides[0];
+  document.getElementById('onboardingIcon').textContent = slide.icon;
+  document.getElementById('onboardingTitle').textContent = slide.title;
+  document.getElementById('onboardingText').textContent = slide.text;
+  const dots = document.getElementById('onboardingDots');
+  if (dots) dots.innerHTML = onboardingSlides.map((_, i) => `<span class="${i === onboardingIndex ? 'active' : ''}"></span>`).join('');
+  const next = document.getElementById('nextOnboardingBtn');
+  if (next) next.textContent = onboardingIndex >= onboardingSlides.length - 1 ? 'Empezar' : 'Siguiente';
+}
+
+function closeOnboarding() {
+  localStorage.setItem(ONBOARDING_KEY, 'done');
+  document.getElementById('onboardingOverlay')?.classList.add('hidden');
+}
+
+function nextOnboarding() {
+  if (onboardingIndex >= onboardingSlides.length - 1) { closeOnboarding(); return; }
+  onboardingIndex += 1;
+  renderOnboarding();
+}
+
+function formatParticipantPills(participants = []) {
+  return `<div class="player-pill-row">${participants.map((p, i) => {
+    const name = typeof p === 'string' ? p : p?.name;
+    return `<span class="player-pill"><span>${getAvatarForName(name, i)}</span>${escapeHtml(name || 'Jugador')}</span>`;
+  }).join('')}</div>`;
+}
+
+function buildNightShareText(title, lines = []) {
+  return `✨ TeLoAdivino · ${title} ✨\n\n${lines.filter(Boolean).join('\n')}\n\nJuega y descubre la vibra del grupo.`;
+}
 
 function getAchievements() {
   try { return JSON.parse(localStorage.getItem(ACHIEVEMENTS_KEY) || '{}') || {}; }
@@ -803,6 +887,7 @@ function initTheme() {
 }
 
 function showScreen(id) {
+  playSound('tap');
   screens.forEach(screenId => document.getElementById(screenId).classList.remove('active'));
   const activeScreen = document.getElementById(id);
   activeScreen.classList.add('active');
@@ -918,6 +1003,7 @@ function renderDots() {
 }
 
 function answer(isYes) {
+  playSound(isYes ? 'yes' : 'no');
   if (isYes) total += activeCards[currentCardIndex].value;
   currentCardIndex += 1;
 
@@ -963,6 +1049,7 @@ function showResult() {
     if (total === 0) resultNote.textContent = 'Parece que respondiste No en todas las tarjetas.';
   }
   unlockAchievement(selectedMode === 'birthday' ? 'birthday' : 'number');
+  playSound('result');
   showScreen('resultScreen');
 }
 
@@ -1669,6 +1756,7 @@ async function addManualParticipant() {
 }
 
 function renderLobby(activateScreen = true) {
+  unlockAchievement('online_room');
   if (!currentRoom) currentRoom = loadSavedRoom();
   if (!currentRoom) { openOnlineRoom(); return; }
   const invite = buildInviteLink(currentRoom.code);
@@ -1691,13 +1779,23 @@ function renderLobby(activateScreen = true) {
   if (qr) qr.src = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(invite)}`;
   const list = document.getElementById('roomParticipantsList');
   if (list) {
-    list.innerHTML = currentRoom.participants.map((participant, index) => `
-      <div class="room-participant">
-        <span>${index + 1}</span>
-        <strong>${participant.name}</strong>
-        <small>${participant.role || 'Participante'} · ${Date.now() - Number(participant.lastSeen || 0) < PARTICIPANT_ACTIVE_MS ? 'en línea' : 'sin actividad'}</small>
+    const activeCount = currentRoom.participants.filter(p => Date.now() - Number(p.lastSeen || 0) < PARTICIPANT_ACTIVE_MS).length;
+    const readyPct = currentRoom.participants.length ? Math.round((activeCount / currentRoom.participants.length) * 100) : 0;
+    list.innerHTML = `
+      <div class="room-readiness-card">
+        <strong>${activeCount}/${currentRoom.participants.length} jugadores activos</strong>
+        <div class="readiness-bar" style="--ready:${readyPct}%"><span></span></div>
+        ${formatParticipantPills(currentRoom.participants)}
       </div>
-    `).join('') || '<div class="empty-history">Aún no hay participantes.</div>';
+    ` + (currentRoom.participants.map((participant, index) => {
+      const online = Date.now() - Number(participant.lastSeen || 0) < PARTICIPANT_ACTIVE_MS;
+      return `
+      <div class="room-participant">
+        <span class="participant-avatar">${getAvatarForName(participant.name, index)}</span>
+        <div class="participant-meta"><strong>${escapeHtml(participant.name)}</strong>
+        <small>${participant.role || 'Participante'} · ${online ? 'en línea' : 'sin actividad'} · ${participant.name === currentRoom.host ? '👑 anfitrión' : 'jugador'}</small></div>
+      </div>`;
+    }).join('') || '<div class="empty-history">Aún no hay participantes.</div>');
   }
   updateOnlineStartControls();
   setOnlineStatus(firebaseOnline
@@ -2241,6 +2339,7 @@ function applyCompatParticipantCount() {
   compatParticipantCount = clampParticipantCount(input?.value, 2, 30);
   syncCountInput('compatParticipantCountInput', compatParticipantCount);
   initTheme();
+showOnboarding(false);
 renderParticipantNameInputs();
 }
 
@@ -2306,36 +2405,70 @@ function describeArc(cx, cy, r, startAngle, endAngle) {
   return `M ${cx} ${cy} L ${start.x} ${start.y} A ${r} ${r} 0 ${largeArcFlag} 0 ${end.x} ${end.y} Z`;
 }
 
-function renderBottleWheel(participants = bottleParticipantList, selectedName = null, animate = false) {
-  const visual = document.getElementById('bottleVisual');
+function renderBottleWheel(participants = bottleParticipantList, selectedName = null, animate = false, targetId = 'bottleVisual') {
+  if (animate) playSound('spin');
+  const visual = document.getElementById(targetId);
   if (!visual) return;
-  const names = (participants || []).filter(Boolean);
-  const count = Math.max(names.length, 2);
+
+  const names = (participants || [])
+    .map(person => typeof person === 'string' ? person : person?.name)
+    .filter(Boolean);
+
   if (!names.length) {
     visual.innerHTML = '<div class="empty-wheel">Agrega participantes</div>';
     return;
   }
+
+  const count = names.length;
   const slice = 360 / count;
-  const slices = names.map((name, index) => {
-    const start = index * slice;
-    const end = start + slice;
-    const mid = start + slice / 2;
-    const textPoint = polarToCartesian(110, 110, 70, mid);
-    const shortName = name.length > 12 ? `${name.slice(0, 11)}…` : name;
-    return `<path d="${describeArc(110, 110, 104, start, end)}" fill="${getWheelSliceColor(index)}" stroke="rgba(255,255,255,.92)" stroke-width="2"></path><text x="${textPoint.x}" y="${textPoint.y}" transform="rotate(${mid} ${textPoint.x} ${textPoint.y})" text-anchor="middle" dominant-baseline="middle">${escapeHtml(shortName)}</text>`;
-  }).join('');
-  let wheelRotation = bottleWheelRotation;
+  const previousRotation = targetId === 'bottleVisual' ? bottleWheelRotation : (window.__onlineBottleWheelRotation || 0);
+  let nextRotation = previousRotation;
+
   if (selectedName) {
     const selectedIndex = Math.max(0, names.indexOf(selectedName));
     const targetCenter = selectedIndex * slice + slice / 2;
-    const extra = 1080 + Math.floor(Math.random() * 360);
-    wheelRotation += extra + (360 - targetCenter);
-    bottleWheelRotation = wheelRotation;
+    const extraTurns = 1080 + Math.floor(Math.random() * 720);
+    nextRotation = previousRotation + extraTurns + (360 - ((previousRotation + targetCenter) % 360));
   }
-  const animateClass = animate ? ' spinning' : '';
-  visual.innerHTML = `<div class="roulette-pointer">▼</div><div class="roulette-wheel-wrap${animateClass}" style="transform: rotate(${wheelRotation}deg)"><svg class="roulette-wheel" viewBox="0 0 220 220" role="img" aria-label="Ruleta de participantes">${slices}<circle cx="110" cy="110" r="28" fill="rgba(255,255,255,.95)" stroke="rgba(190,24,93,.22)" stroke-width="2"></circle><text x="110" y="114" text-anchor="middle" class="wheel-center">🍾</text></svg></div>`;
-}
 
+  if (targetId === 'bottleVisual') bottleWheelRotation = nextRotation;
+  else window.__onlineBottleWheelRotation = nextRotation;
+
+  const stops = names.map((_, index) => {
+    const start = (index * slice).toFixed(3);
+    const end = ((index + 1) * slice).toFixed(3);
+    return `${getWheelSliceColor(index)} ${start}deg ${end}deg`;
+  }).join(', ');
+
+  const labels = names.map((name, index) => {
+    const angle = index * slice + slice / 2;
+    const shortName = name.length > 11 ? `${name.slice(0, 10)}…` : name;
+    return `<span class="wheel-label" style="--a:${angle}deg">${escapeHtml(shortName)}</span>`;
+  }).join('');
+
+  visual.innerHTML = `
+    <div class="roulette-pointer">▼</div>
+    <div class="roulette-wheel-wrap" style="transform: rotate(${previousRotation}deg)">
+      <div class="roulette-wheel-css" style="background: conic-gradient(${stops})">
+        ${labels}
+        <div class="wheel-center-css">🍾</div>
+      </div>
+    </div>`;
+
+  const wheel = visual.querySelector('.roulette-wheel-wrap');
+  if (!wheel) return;
+
+  if (animate && selectedName) {
+    wheel.classList.add('is-spinning');
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        wheel.style.transform = `rotate(${nextRotation}deg)`;
+      });
+    });
+  } else {
+    wheel.style.transform = `rotate(${nextRotation}deg)`;
+  }
+}
 function updateBottleStats(pair = null) {
   if (pair) pair.forEach(name => { bottleStats[name] = (bottleStats[name] || 0) + 1; });
   const statsEl = document.getElementById('bottleStats');
@@ -2397,6 +2530,7 @@ function spinLocalBottle(replaceLast = false) {
   bottleRounds.unshift(round);
   updateBottleStats(pair);
   bottlePendingSelection = null;
+  playSound('success');
   renderBottleRound(round);
 }
 
@@ -2533,7 +2667,10 @@ function renderOnlineBottle(force = false) {
   const spinLabel = pending ? 'Girar segunda persona' : 'Girar primera persona';
   const spinButton = isHost ? `<button class="primary-button" id="spinOnlineBottleBtn">${spinLabel}</button><button class="secondary-button" id="changeOnlineBottleBtn">Reiniciar selección</button>` : '<div class="online-wait-card"><strong>Espera a que el anfitrión gire.</strong></div>';
   const logHtml = rounds.length ? `<div class="bottle-log">${rounds.slice(-5).reverse().map((round, index) => `<div><strong>${index + 1}. ${round.pair[0].name} + ${round.pair[1].name}</strong><small>${round.challenge.type}</small></div>`).join('')}</div>` : '';
-  options.innerHTML = `${selectionHtml}${challengeHtml}<div class="bottle-actions">${spinButton}</div>${logHtml}`;
+  options.innerHTML = `<div class="bottle-visual roulette-stage online-roulette-stage" id="onlineBottleVisual"></div>${selectionHtml}${challengeHtml}<div class="bottle-actions">${spinButton}</div>${logHtml}`;
+  const onlineWheelPeople = getPlayableRoomParticipants();
+  const onlineSelectedName = latest ? latest.pair?.[1]?.name : pending ? pending.name : null;
+  renderBottleWheel(onlineWheelPeople, onlineSelectedName, Boolean(onlineSelectedName), 'onlineBottleVisual');
   dots.innerHTML = '';
   document.getElementById('spinOnlineBottleBtn')?.addEventListener('click', () => spinOnlineBottle(false));
   document.getElementById('changeOnlineBottleBtn')?.addEventListener('click', () => resetOnlineBottleSelection());
@@ -3238,6 +3375,7 @@ document.querySelectorAll('.picker-option').forEach(button => {
     document.querySelectorAll('.picker-option').forEach(item => item.classList.remove('active'));
     button.classList.add('active');
     initTheme();
+showOnboarding(false);
 renderParticipantNameInputs();
 renderVibeParticipantNameInputs();
 renderBottleParticipantNameInputs();
@@ -3266,6 +3404,8 @@ document.querySelectorAll('.compat-mode-option').forEach(button => {
   });
 });
 document.getElementById('howBtn').addEventListener('click', () => openExplanation('homeScreen'));
+document.getElementById('skipOnboardingBtn')?.addEventListener('click', closeOnboarding);
+document.getElementById('nextOnboardingBtn')?.addEventListener('click', nextOnboarding);
 document.getElementById('backHomeFromModesBtn').addEventListener('click', () => showScreen('homeScreen'));
 document.getElementById('backModesFromIntroBtn').addEventListener('click', openModes);
 document.getElementById('startSelectedBtn').addEventListener('click', startSelectedMode);
@@ -3392,6 +3532,7 @@ document.querySelectorAll('.mode-card').forEach(button => {
 });
 
 initTheme();
+showOnboarding(false);
 renderParticipantNameInputs();
 renderVibeParticipantNameInputs();
 renderBottleParticipantNameInputs();

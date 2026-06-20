@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#130718" />
   <meta name="description" content="TeLoAdivino: juegos de adivinanza, cumpleaños y compatibilidad mágica para varias personas." />
-  <title>TeLoAdivino · UI 6.0</title>
+  <title>TeLoAdivino · v7.0</title>
   <link rel="manifest" href="manifest.json" />
   <link rel="stylesheet" href="styles.css" />
 </head>
@@ -699,6 +699,20 @@
     </nav>
 
   </main>
+
+  <div id="onboardingOverlay" class="onboarding-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="onboardingTitle">
+    <div class="onboarding-card">
+      <span class="onboarding-icon" id="onboardingIcon">✨</span>
+      <p class="eyebrow">Primer vistazo</p>
+      <h2 id="onboardingTitle">Bienvenido a TeLoAdivino</h2>
+      <p id="onboardingText">Elige un juego, agrega participantes y comparte la sala por QR para jugar desde varios celulares.</p>
+      <div class="onboarding-dots" id="onboardingDots"></div>
+      <div class="onboarding-actions">
+        <button class="secondary-button" id="skipOnboardingBtn">Saltar</button>
+        <button class="primary-button" id="nextOnboardingBtn">Siguiente</button>
+      </div>
+    </div>
+  </div>
 
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>

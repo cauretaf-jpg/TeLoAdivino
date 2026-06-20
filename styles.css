@@ -1405,3 +1405,304 @@ body {
   .screen { padding-left: 20px !important; padding-right: 20px !important; }
   .bottom-nav { margin: 16px 12px calc(18px + env(safe-area-inset-bottom)) !important; }
 }
+
+
+/* v6.0.8: ruleta visible y animada de forma real.
+   La versión anterior insertaba la ruleta con el transform final, por eso no se apreciaba el giro.
+   Ahora la rueda parte desde la rotación anterior y luego se anima hacia la selección. */
+.roulette-stage.bottle-visual {
+  transform: none !important;
+  filter: none !important;
+  overflow: visible;
+}
+.roulette-wheel-css {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  border: 8px solid rgba(255,255,255,.92);
+  box-shadow: inset 0 0 0 2px rgba(190,24,93,.12), 0 24px 45px rgba(62,27,52,.18);
+  overflow: hidden;
+}
+.roulette-wheel-wrap.is-spinning {
+  transition: transform 3s cubic-bezier(.12,.86,.18,1) !important;
+}
+.wheel-center-css {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 64px;
+  height: 64px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  background: rgba(255,255,255,.96);
+  border: 2px solid rgba(190,24,93,.18);
+  box-shadow: 0 12px 24px rgba(62,27,52,.18);
+  font-size: 30px;
+  z-index: 4;
+}
+.wheel-label {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 94px;
+  margin-left: -47px;
+  text-align: center;
+  transform: rotate(var(--a)) translateY(-96px) rotate(calc(-1 * var(--a)));
+  transform-origin: center;
+  font-size: 12px;
+  line-height: 1.05;
+  font-weight: 950;
+  color: #4a044e;
+  text-shadow: 0 1px 0 rgba(255,255,255,.9), 0 -1px 0 rgba(255,255,255,.9), 1px 0 0 rgba(255,255,255,.9), -1px 0 0 rgba(255,255,255,.9);
+  z-index: 3;
+  pointer-events: none;
+}
+.online-roulette-stage {
+  margin-top: 4px;
+  margin-bottom: 16px;
+}
+@media (max-width: 520px) {
+  .wheel-label {
+    width: 76px;
+    margin-left: -38px;
+    transform: rotate(var(--a)) translateY(-82px) rotate(calc(-1 * var(--a)));
+    font-size: 10px;
+  }
+  .wheel-center-css {
+    width: 54px;
+    height: 54px;
+    font-size: 25px;
+  }
+}
+
+
+/* =========================================================
+   v7.0 · Pulido final de producto
+   Objetivo: que la app se sienta más terminada sin cambiar
+   la lógica base de los juegos.
+   ========================================================= */
+:root {
+  --motion-fast: 180ms;
+  --motion-medium: 280ms;
+}
+
+.screen.active {
+  animation: teloScreenIn var(--motion-medium) ease both;
+}
+
+@keyframes teloScreenIn {
+  from { opacity: 0; transform: translateY(12px) scale(.992); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.mode-card,
+.primary-button,
+.secondary-button,
+.icon-button,
+.compat-option,
+.truth-card,
+.likely-vote-card {
+  transition: transform var(--motion-fast) ease, box-shadow var(--motion-fast) ease, filter var(--motion-fast) ease;
+}
+
+.mode-card:active,
+.primary-button:active,
+.secondary-button:active,
+.icon-button:active,
+.compat-option:active,
+.truth-card:active,
+.likely-vote-card:active {
+  transform: scale(.985);
+}
+
+.mode-card::after {
+  content: 'Tocar para jugar';
+  display: inline-flex;
+  width: max-content;
+  margin-top: 10px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 900;
+  color: rgba(255,255,255,.92);
+  background: rgba(255,255,255,.16);
+  border: 1px solid rgba(255,255,255,.18);
+}
+
+.mode-card.online-card::after { content: 'Sala con QR'; }
+.mode-card[data-mode="bottle"]::after { content: 'Ruleta real'; }
+.mode-card[data-mode="truth"]::after { content: 'Cartas visuales'; }
+.mode-card[data-mode="likely"]::after { content: 'Votación grupal'; }
+.mode-card[data-mode="pair"]::after { content: 'Para 2 personas'; }
+
+.room-status-strip {
+  align-items: center;
+  gap: 10px;
+}
+
+.room-readiness-card {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+  padding: 14px;
+  border-radius: 22px;
+  background: rgba(255,255,255,.66);
+  border: 1px solid rgba(255,255,255,.74);
+  box-shadow: 0 14px 36px rgba(39,9,33,.08);
+}
+
+.readiness-bar {
+  height: 10px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: rgba(148,163,184,.24);
+}
+.readiness-bar span {
+  display: block;
+  height: 100%;
+  width: var(--ready, 0%);
+  border-radius: inherit;
+  background: linear-gradient(90deg, #ec4899, #8b5cf6, #22c55e);
+  transition: width .35s ease;
+}
+
+.room-participant {
+  grid-template-columns: auto 1fr !important;
+  align-items: center;
+  gap: 10px;
+}
+.participant-avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: 16px;
+  display: grid;
+  place-items: center;
+  font-size: 21px;
+  background: linear-gradient(135deg, rgba(236,72,153,.18), rgba(139,92,246,.2));
+  border: 1px solid rgba(255,255,255,.68);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.65), 0 10px 22px rgba(39,9,33,.10);
+}
+.participant-meta {
+  display: grid;
+  gap: 2px;
+}
+.player-pill-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+.player-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 10px;
+  border-radius: 999px;
+  font-weight: 900;
+  font-size: 12px;
+  background: rgba(255,255,255,.66);
+  border: 1px solid rgba(255,255,255,.72);
+}
+
+.result-card,
+.intro-panel,
+.explain-panel {
+  position: relative;
+  overflow: hidden;
+}
+.result-card::before,
+.intro-panel::before,
+.explain-panel::before {
+  content: '';
+  position: absolute;
+  inset: -80px auto auto -80px;
+  width: 180px;
+  height: 180px;
+  border-radius: 999px;
+  background: radial-gradient(circle, rgba(236,72,153,.18), transparent 68%);
+  pointer-events: none;
+}
+
+.result-number {
+  animation: resultPop .5s cubic-bezier(.2,1.4,.3,1) both;
+}
+@keyframes resultPop {
+  from { transform: scale(.8); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+.onboarding-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: grid;
+  place-items: center;
+  padding: 22px;
+  background: rgba(12,5,18,.62);
+  backdrop-filter: blur(14px);
+}
+.onboarding-overlay.hidden { display: none; }
+.onboarding-card {
+  width: min(420px, 100%);
+  padding: 24px;
+  border-radius: 32px;
+  text-align: center;
+  background: linear-gradient(180deg, rgba(255,255,255,.96), rgba(255,245,251,.92));
+  border: 1px solid rgba(255,255,255,.82);
+  box-shadow: 0 34px 90px rgba(0,0,0,.28);
+  color: #2a122d;
+}
+.onboarding-icon {
+  width: 72px;
+  height: 72px;
+  margin: 0 auto 10px;
+  display: grid;
+  place-items: center;
+  border-radius: 26px;
+  font-size: 34px;
+  background: linear-gradient(135deg, #f9a8d4, #a78bfa);
+  box-shadow: 0 16px 40px rgba(190,24,93,.22);
+}
+.onboarding-dots {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  margin: 18px 0;
+}
+.onboarding-dots span {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(148,163,184,.5);
+}
+.onboarding-dots span.active {
+  width: 22px;
+  background: linear-gradient(90deg, #ec4899, #8b5cf6);
+}
+.onboarding-actions {
+  display: grid;
+  grid-template-columns: 1fr 1.3fr;
+  gap: 10px;
+}
+
+/* Garantía final: barra en flujo normal, nunca fija. */
+.bottom-nav {
+  position: static !important;
+  left: auto !important;
+  right: auto !important;
+  bottom: auto !important;
+  z-index: 5 !important;
+  margin: 16px 0 calc(22px + env(safe-area-inset-bottom)) !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .screen.active,
+  .result-number,
+  .mode-card,
+  .primary-button,
+  .secondary-button,
+  .icon-button { animation: none !important; transition: none !important; }
+}
