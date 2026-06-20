@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="theme-color" content="#c0266f" />
+  <meta name="theme-color" content="#130718" />
   <meta name="description" content="TeLoAdivino: juegos de adivinanza, cumpleaños y compatibilidad mágica para varias personas." />
-  <title>TeLoAdivino</title>
+  <title>TeLoAdivino · UI 6.0</title>
   <link rel="manifest" href="manifest.json" />
   <link rel="stylesheet" href="styles.css" />
 </head>
@@ -17,7 +17,12 @@
       <div class="hero-card">
         <p class="eyebrow">Juego social</p>
         <h1>TeLo<br><span>Adivino</span></h1>
-        <p class="subtitle">Elige un modo, responde en privado y deja que la app descubra números, cumpleaños o afinidades entre personas.</p>
+        <p class="subtitle">Juegos, química, risas y desafíos para compartir con amigos desde un celular o en salas con QR.</p>
+        <div class="hero-badges" aria-label="Resumen de funciones">
+          <span>💘 Compatibilidad</span>
+          <span>🎉 Grupo</span>
+          <span>🌐 QR</span>
+        </div>
         <div class="magic-hat" aria-hidden="true">
           <div class="floating-card card-a">🎂</div>
           <div class="floating-card card-b">7</div>
@@ -38,8 +43,8 @@
         <span class="topbar-spacer"></span>
       </div>
       <div class="section-heading">
-        <p class="eyebrow">Elige una experiencia</p>
-        <h2>¿Qué quieres<br>adivinar?</h2>
+        <p class="eyebrow">Centro de juegos</p>
+        <h2>Elige tu<br>experiencia</h2>
       </div>
       <div class="mode-section">
         <div class="mode-section-title"><span>✨</span><strong>Adivinanzas</strong></div>
@@ -70,6 +75,11 @@
             <strong>Descubre tu vibra</strong>
             <small>De 1 a 10 personas. La app revela si tu energía es clásica, coqueta, íntima o atrevida.</small>
           </button>
+          <button class="mode-card featured" data-mode="pair">
+            <span class="mode-icon">❤️</span>
+            <strong>Modo Parejas</strong>
+            <small>Juego para 2 personas: adivinen qué respondería la otra persona y vean qué tanto se conocen.</small>
+          </button>
         </div>
       </div>
 
@@ -81,10 +91,39 @@
             <strong>Salas con QR <em>Beta</em></strong>
             <small>Crea una sala, comparte el código o muestra un QR para que otros se unan.</small>
           </button>
+          <button class="mode-card featured" data-mode="bottle">
+            <span class="mode-icon">🍾</span>
+            <strong>La Botellita</strong>
+            <small>Ruleta grupal: agrega participantes, gira dos veces y descubre quiénes deben darse un piquito.</small>
+          </button>
+          <button class="mode-card featured alt" data-mode="truth">
+            <span class="mode-icon">🎲</span>
+            <strong>Verdad o Reto</strong>
+            <small>Juego grupal clásico con participantes, intensidades, preguntas y retos aleatorios.</small>
+          </button>
+          <button class="mode-card featured" data-mode="likely">
+            <span class="mode-icon">🏆</span>
+            <strong>¿Quién es más probable?</strong>
+            <small>Votación grupal con ranking de la noche y resultados compartibles.</small>
+          </button>
         </div>
       </div>
 
-      <button class="secondary-button small-action" id="historyBtn">Ver historial local</button>
+      <div class="mode-section utility-section">
+        <div class="mode-section-title"><span>🎨</span><strong>Personalización</strong></div>
+        <div class="theme-picker" id="themePicker" aria-label="Temas visuales">
+          <button type="button" class="theme-chip active" data-theme="default">Original</button>
+          <button type="button" class="theme-chip" data-theme="neon">Neón</button>
+          <button type="button" class="theme-chip" data-theme="romantic">Romántico</button>
+          <button type="button" class="theme-chip" data-theme="dark">Oscuro</button>
+          <button type="button" class="theme-chip" data-theme="summer">Verano</button>
+        </div>
+      </div>
+
+      <div class="mode-actions-row">
+        <button class="secondary-button small-action" id="historyBtn">Ver historial local</button>
+        <button class="secondary-button small-action" id="achievementsBtn">Ver logros</button>
+      </div>
     </section>
 
     <section id="introScreen" class="screen">
@@ -135,17 +174,11 @@
 
         <div class="setup-block">
           <label class="setup-label">Participantes</label>
-          <div class="participant-picker" id="participantPicker">
-            <button type="button" class="picker-option active" data-count="2">2</button>
-            <button type="button" class="picker-option" data-count="3">3</button>
-            <button type="button" class="picker-option" data-count="4">4</button>
-            <button type="button" class="picker-option" data-count="5">5</button>
-            <button type="button" class="picker-option" data-count="6">6</button>
-            <button type="button" class="picker-option" data-count="7">7</button>
-            <button type="button" class="picker-option" data-count="8">8</button>
-            <button type="button" class="picker-option" data-count="9">9</button>
-            <button type="button" class="picker-option" data-count="10">10</button>
+          <div class="count-input-row">
+            <input type="number" id="compatParticipantCountInput" min="2" max="30" value="2">
+            <button type="button" class="secondary-button compact" id="applyCompatCountBtn">Aplicar</button>
           </div>
+          <small class="field-help">Puedes escribir la cantidad de participantes. Mínimo 2, máximo recomendado 30.</small>
         </div>
 
         <div class="setup-block">
@@ -172,18 +205,11 @@
 
         <div class="setup-block">
           <label class="setup-label">Participantes</label>
-          <div class="participant-picker" id="vibeParticipantPicker">
-            <button type="button" class="vibe-picker-option active" data-count="1">1</button>
-            <button type="button" class="vibe-picker-option" data-count="2">2</button>
-            <button type="button" class="vibe-picker-option" data-count="3">3</button>
-            <button type="button" class="vibe-picker-option" data-count="4">4</button>
-            <button type="button" class="vibe-picker-option" data-count="5">5</button>
-            <button type="button" class="vibe-picker-option" data-count="6">6</button>
-            <button type="button" class="vibe-picker-option" data-count="7">7</button>
-            <button type="button" class="vibe-picker-option" data-count="8">8</button>
-            <button type="button" class="vibe-picker-option" data-count="9">9</button>
-            <button type="button" class="vibe-picker-option" data-count="10">10</button>
+          <div class="count-input-row">
+            <input type="number" id="vibeParticipantCountInput" min="1" max="30" value="1">
+            <button type="button" class="secondary-button compact" id="applyVibeCountBtn">Aplicar</button>
           </div>
+          <small class="field-help">Puedes jugar solo o con grupo. Máximo recomendado 30.</small>
         </div>
 
         <div class="setup-block">
@@ -282,6 +308,10 @@
       <article class="intro-panel online-panel lobby-panel">
         <p class="eyebrow">Sala creada</p>
         <h2 id="roomTitle">Sala</h2>
+        <div class="room-status-strip">
+          <span id="roomStatusBadge" class="room-status-badge">Lobby</span>
+          <small id="roomHostText">Anfitrión: —</small>
+        </div>
         <div class="room-code-card">
           <span>Código</span>
           <strong id="roomCodeText">-----</strong>
@@ -312,7 +342,7 @@
 
         <section class="online-start-panel">
           <strong>Juego online</strong>
-          <p>Por ahora las salas online inician con Compatibilidad mágica. Cada persona responde desde su celular.</p>
+          <p>El anfitrión puede iniciar Compatibilidad mágica, La Botellita o Verdad o Reto. Todos verán el estado desde su celular.</p>
           <label class="name-field">
             <span>Modo de compatibilidad</span>
             <select id="onlineCompatibilityModeSelect">
@@ -322,10 +352,28 @@
               <option value="atrevida">Atrevida</option>
             </select>
           </label>
-          <button class="primary-button" id="startOnlineCompatibilityBtn">Iniciar juego</button>
+          <button class="primary-button" id="startOnlineCompatibilityBtn">Iniciar compatibilidad</button>
+          <div class="online-divider">o</div>
+          <label class="name-field">
+            <span>Intensidad de La Botellita</span>
+            <select id="onlineBottleIntensitySelect">
+              <option value="suave">Suave</option>
+              <option value="fiesta">Fiesta</option>
+              <option value="coqueta">Coqueta</option>
+              <option value="atrevida">Atrevida</option>
+            </select>
+          </label>
+          <label class="toggle-row"><input type="checkbox" id="onlineBottlePhysicalToggle"><span>Permitir dinámica de piquito con alternativa si alguien no quiere.</span></label>
+          <button class="secondary-button" id="startOnlineBottleBtn">Iniciar La Botellita</button>
+          <button class="secondary-button" id="startOnlineTruthBtn">Iniciar Verdad o Reto</button>
           <small id="onlineStartHint">Necesitas al menos 2 participantes conectados.</small>
         </section>
 
+        <div class="room-management-actions">
+          <button class="secondary-button" id="leaveRoomBtn">Abandonar sala</button>
+          <button class="secondary-button danger-soft" id="finishRoomBtn">Finalizar partida</button>
+          <button class="secondary-button" id="backToLobbyBtn">Volver a lobby</button>
+        </div>
         <p class="online-note">Sala conectada a Firebase Realtime Database. Los participantes se actualizan en tiempo real.</p>
       </article>
     </section>
@@ -343,6 +391,233 @@
       </div>
       <div class="compat-options" id="onlineGameOptions"></div>
       <div class="progress-dots" id="onlineGameProgressDots"></div>
+    </section>
+
+
+    <section id="bottleSetupScreen" class="screen">
+      <div class="topbar">
+        <button class="icon-button" id="backIntroFromBottleSetupBtn" aria-label="Volver">←</button>
+        <div class="step-pill">La Botellita</div>
+        <span class="topbar-spacer"></span>
+      </div>
+      <article class="intro-panel compat-setup-panel">
+        <div class="intro-icon">🍾</div>
+        <p class="eyebrow">Juego de grupo</p>
+        <h2>Configura La Botellita</h2>
+        <p class="subtitle">Agrega participantes. La ruleta elegirá primero a una persona y luego a otra. Cuando estén las 2, mostrará quiénes deben darse un piquito.</p>
+
+        <div class="setup-block">
+          <label class="setup-label">Intensidad</label>
+          <div class="compat-mode-picker" id="bottleIntensityPicker">
+            <button type="button" class="compat-mode-option bottle-intensity-option active" data-bottle-intensity="suave"><strong>Suave</strong><span>Preguntas y dinámicas cómodas para cualquier grupo.</span></button>
+            <button type="button" class="compat-mode-option bottle-intensity-option" data-bottle-intensity="fiesta"><strong>Fiesta</strong><span>Más humor, votaciones y retos sociales.</span></button>
+            <button type="button" class="compat-mode-option bottle-intensity-option" data-bottle-intensity="coqueta"><strong>Coqueta</strong><span>Miradas, cumplidos, tensión ligera e indirectas.</span></button>
+            <button type="button" class="compat-mode-option bottle-intensity-option" data-bottle-intensity="atrevida"><strong>Atrevida</strong><span>Más intensa, siempre con opción de pasar o cambiar reto.</span></button>
+          </div>
+        </div>
+
+        <div class="setup-block consent-box">
+          <label class="toggle-row"><input type="checkbox" id="bottlePhysicalToggle"><span>Permitir dinámica de piquito con alternativa si alguien no quiere.</span></label>
+          <small>Regla de seguridad: nadie está obligado. Si una persona no quiere, se cambia por una verdad incómoda, cumplido o reto verbal.</small>
+        </div>
+
+        <div class="setup-block">
+          <label class="setup-label">Participantes</label>
+          <div class="count-input-row">
+            <input type="number" id="bottleParticipantCountInput" min="2" max="30" value="2">
+            <button type="button" class="secondary-button compact" id="applyBottleCountBtn">Aplicar</button>
+          </div>
+          <small class="field-help">Escribe cuántas personas jugarán. La ruleta se ajusta automáticamente.</small>
+        </div>
+
+        <div class="setup-block">
+          <label class="setup-label">Nombres</label>
+          <div class="participant-names" id="bottleParticipantNames"></div>
+        </div>
+
+        <button class="primary-button" id="startBottleBtn">Comenzar La Botellita</button>
+      </article>
+    </section>
+
+    <section id="bottleGameScreen" class="screen">
+      <div class="topbar">
+        <button class="icon-button" id="backModesFromBottleBtn" aria-label="Volver">←</button>
+        <div class="step-pill" id="bottlePill">La Botellita</div>
+        <button class="icon-button ghost" id="resetBottleBtn" aria-label="Reiniciar">↻</button>
+      </div>
+      <article class="intro-panel bottle-panel">
+        <div class="bottle-visual roulette-stage" id="bottleVisual"></div>
+        <p class="eyebrow" id="bottleEyebrow">Gira y descubre</p>
+        <h2 id="bottleTitle">¿Quiénes saldrán?</h2>
+        <div class="bottle-pair" id="bottlePair">La primera vuelta elige una persona. La segunda vuelta elige a la otra.</div>
+        <div class="bottle-card" id="bottleChallenge">Cuando salgan dos personas, la app dirá quiénes deben darse un piquito. Si alguien no quiere, se cambia por alternativa verbal.</div>
+        <div class="bottle-actions">
+          <button class="primary-button" id="spinBottleBtn">Girar ruleta</button>
+          <button class="secondary-button" id="bottlePassBtn">Reiniciar selección</button>
+        </div>
+        <div class="bottle-log" id="bottleLog"></div>
+        <div class="night-stats" id="bottleStats"></div>
+      </article>
+    </section>
+
+    <section id="truthSetupScreen" class="screen">
+      <div class="topbar">
+        <button class="icon-button" id="backIntroFromTruthSetupBtn" aria-label="Volver">←</button>
+        <div class="step-pill">Verdad o Reto</div>
+        <span class="topbar-spacer"></span>
+      </div>
+      <article class="intro-panel compat-setup-panel">
+        <div class="intro-icon">🎲</div>
+        <p class="eyebrow">Juego de grupo</p>
+        <h2>Configura Verdad o Reto</h2>
+        <p class="subtitle">Agrega participantes, elige una intensidad y deja que la app seleccione turnos, verdades y retos.</p>
+
+        <div class="setup-block">
+          <label class="setup-label">Intensidad</label>
+          <div class="compat-mode-picker" id="truthIntensityPicker">
+            <button type="button" class="compat-mode-option truth-intensity-option active" data-truth-intensity="suave"><strong>Suave</strong><span>Preguntas cómodas y retos simples.</span></button>
+            <button type="button" class="compat-mode-option truth-intensity-option" data-truth-intensity="fiesta"><strong>Fiesta</strong><span>Más humor, votaciones y dinámicas grupales.</span></button>
+            <button type="button" class="compat-mode-option truth-intensity-option" data-truth-intensity="coqueta"><strong>Coqueta</strong><span>Indirectas, cumplidos y química ligera.</span></button>
+            <button type="button" class="compat-mode-option truth-intensity-option" data-truth-intensity="atrevida"><strong>Atrevida</strong><span>Más intensa, pero siempre con opción de pasar.</span></button>
+          </div>
+        </div>
+
+        <div class="setup-block">
+          <label class="setup-label">Participantes</label>
+          <div class="count-input-row">
+            <input type="number" id="truthParticipantCountInput" min="2" max="30" value="2">
+            <button type="button" class="secondary-button compact" id="applyTruthCountBtn">Aplicar</button>
+          </div>
+          <small class="field-help">Escribe la cantidad de participantes. Máximo recomendado 30.</small>
+        </div>
+
+        <div class="setup-block">
+          <label class="setup-label">Nombres</label>
+          <div class="participant-names" id="truthParticipantNames"></div>
+        </div>
+
+        <button class="primary-button" id="startTruthBtn">Comenzar Verdad o Reto</button>
+      </article>
+    </section>
+
+    <section id="truthGameScreen" class="screen">
+      <div class="topbar">
+        <button class="icon-button" id="backModesFromTruthBtn" aria-label="Volver">←</button>
+        <div class="step-pill" id="truthPill">Verdad o Reto</div>
+        <button class="icon-button ghost" id="resetTruthBtn" aria-label="Reiniciar">↻</button>
+      </div>
+      <article class="intro-panel bottle-panel">
+        <div class="bottle-visual" id="truthVisual">🎲</div>
+        <p class="eyebrow" id="truthEyebrow">Turno aleatorio</p>
+        <h2 id="truthTitle">¿Quién juega?</h2>
+        <div class="bottle-pair" id="truthPlayer">Presiona Verdad, Reto o Aleatorio para seleccionar a alguien.</div>
+        <div class="bottle-card" id="truthChallenge">La app elegirá una persona y mostrará una verdad o un reto según el botón elegido.</div>
+        <div class="bottle-actions">
+          <button class="primary-button" id="truthTruthBtn">Verdad</button>
+          <button class="primary-button" id="truthDareBtn">Reto</button>
+          <button class="secondary-button" id="truthRandomBtn">Aleatorio</button>
+        </div>
+        <div class="bottle-log" id="truthLog"></div>
+        <div class="night-stats" id="truthStats"></div>
+      </article>
+    </section>
+
+
+    <section id="pairSetupScreen" class="screen">
+      <div class="topbar">
+        <button class="icon-button" id="backIntroFromPairSetupBtn" aria-label="Volver">←</button>
+        <div class="step-pill">Modo Parejas</div>
+        <span class="topbar-spacer"></span>
+      </div>
+      <article class="intro-panel compat-setup-panel pair-panel">
+        <div class="intro-icon">❤️</div>
+        <p class="eyebrow">Juego para dos</p>
+        <h2>¿Qué tanto se conocen?</h2>
+        <p class="subtitle">Una persona intenta adivinar qué respondería la otra. Luego se revela la respuesta real y la app calcula el puntaje de complicidad.</p>
+
+        <div class="setup-block">
+          <label class="setup-label">Participantes</label>
+          <div class="participant-names pair-names">
+            <label><span>Persona 1</span><input id="pairNameA" type="text" value="Persona 1" maxlength="24"></label>
+            <label><span>Persona 2</span><input id="pairNameB" type="text" value="Persona 2" maxlength="24"></label>
+          </div>
+        </div>
+
+        <div class="setup-block">
+          <label class="setup-label">Tipo de preguntas</label>
+          <div class="compat-mode-picker" id="pairModePicker">
+            <button type="button" class="compat-mode-option pair-mode-option active" data-pair-mode="dulce"><strong>Dulce</strong><span>Gustos, detalles, planes y cariño cotidiano.</span></button>
+            <button type="button" class="compat-mode-option pair-mode-option" data-pair-mode="profundo"><strong>Profundo</strong><span>Confianza, emociones, límites y formas de cuidar el vínculo.</span></button>
+            <button type="button" class="compat-mode-option pair-mode-option" data-pair-mode="coqueta"><strong>Coqueta</strong><span>Indirectas, citas, señales y tensión bonita.</span></button>
+          </div>
+        </div>
+
+        <button class="primary-button" id="startPairBtn">Comenzar Modo Parejas</button>
+      </article>
+    </section>
+
+    <section id="pairGameScreen" class="screen">
+      <div class="topbar">
+        <button class="icon-button" id="backModesFromPairBtn" aria-label="Volver">←</button>
+        <div class="step-pill" id="pairPill">Modo Parejas</div>
+        <button class="icon-button ghost" id="resetPairBtn" aria-label="Reiniciar">↻</button>
+      </div>
+      <article class="intro-panel compat-setup-panel pair-game-panel">
+        <div class="intro-icon">❤️</div>
+        <p class="eyebrow" id="pairEyebrow">Turno</p>
+        <h2 id="pairTitle">Pregunta</h2>
+        <p class="subtitle" id="pairHelp">Responde en privado.</p>
+        <div class="likely-vote-grid pair-options" id="pairOptions"></div>
+        <div class="likely-results pair-feedback" id="pairFeedback"></div>
+        <div class="night-stats" id="pairStats"></div>
+      </article>
+    </section>
+
+    <section id="likelySetupScreen" class="screen">
+      <div class="topbar">
+        <button class="icon-button" id="backIntroFromLikelySetupBtn" aria-label="Volver">←</button>
+        <div class="step-pill">¿Quién es más probable?</div>
+        <span class="topbar-spacer"></span>
+      </div>
+      <article class="intro-panel compat-setup-panel likely-panel">
+        <div class="intro-icon">🏆</div>
+        <p class="eyebrow">Juego de votación</p>
+        <h2>Arma el grupo</h2>
+        <p class="subtitle">Escribe cuántas personas jugarán, agrega sus nombres y voten quién calza mejor con cada pregunta.</p>
+        <div class="setup-block">
+          <label class="setup-label">Participantes</label>
+          <div class="count-input-row">
+            <input type="number" id="likelyParticipantCountInput" min="3" max="30" value="3">
+            <button type="button" class="secondary-button compact" id="applyLikelyCountBtn">Aplicar</button>
+          </div>
+          <small class="field-help">Mínimo 3 participantes. Máximo recomendado 30.</small>
+        </div>
+        <div class="setup-block">
+          <label class="setup-label">Nombres</label>
+          <div class="participant-names" id="likelyParticipantNames"></div>
+        </div>
+        <button class="primary-button" id="startLikelyBtn">Comenzar votación</button>
+      </article>
+    </section>
+
+    <section id="likelyGameScreen" class="screen">
+      <div class="topbar">
+        <button class="icon-button" id="backModesFromLikelyBtn" aria-label="Volver">←</button>
+        <div class="step-pill">¿Quién es más probable?</div>
+        <button class="icon-button ghost" id="resetLikelyBtn" aria-label="Reiniciar">↻</button>
+      </div>
+      <article class="intro-panel compat-setup-panel likely-panel">
+        <div class="intro-icon">🏆</div>
+        <p class="eyebrow">Votación grupal</p>
+        <h2 id="likelyQuestion">¿Quién es más probable?</h2>
+        <div class="likely-vote-grid" id="likelyVoteGrid"></div>
+        <div class="bottle-actions">
+          <button class="secondary-button" id="nextLikelyQuestionBtn">Siguiente pregunta</button>
+          <button class="secondary-button" id="shareLikelyBtn">Compartir ranking</button>
+        </div>
+        <div class="likely-results" id="likelyResults"></div>
+        <div class="night-stats" id="likelyStats"></div>
+      </article>
     </section>
 
     <section id="resultScreen" class="screen">
@@ -365,6 +640,19 @@
       </div>
     </section>
 
+
+    <section id="achievementsScreen" class="screen">
+      <div class="topbar">
+        <button class="icon-button" id="backFromAchievementsBtn" aria-label="Volver">←</button>
+        <div class="step-pill">Logros</div>
+        <button class="icon-button ghost" id="clearAchievementsBtn" aria-label="Reiniciar logros">↻</button>
+      </div>
+      <article class="explain-panel history-panel">
+        <h2>Logros de TeLoAdivino</h2>
+        <p>Se guardan solo en este navegador. Sirven para darle más juego a la noche.</p>
+        <div id="achievementsList" class="achievements-list"></div>
+      </article>
+    </section>
 
     <section id="historyScreen" class="screen">
       <div class="topbar">
@@ -393,12 +681,23 @@
           <div><strong>Cumpleaños</strong><span>día 1 al 31 + mes 1 al 12</span></div>
           <div><strong>Compatibilidad</strong><span>test grupal de 2 a 10 personas</span></div>
           <div><strong>Descubre tu vibra</strong><span>mapa individual y grupal de 1 a 10 personas</span></div>
+          <div><strong>La Botellita</strong><span>elige 2 personas para el piquito opcional</span></div>
+          <div><strong>Verdad o Reto</strong><span>turnos aleatorios con preguntas y desafíos</span></div>
+          <div><strong>¿Quién es más probable?</strong><span>votación grupal con ranking acumulado</span></div>
+          <div><strong>Temas y logros</strong><span>personalización visual y progreso local</span></div>
         </div>
-        <p>En el modo cumpleaños, la app primero adivina el día y luego el mes. En compatibilidad, varias personas escriben sus nombres, eligen un modo y responden en privado. La app compara sus elecciones para encontrar los matches con mayor afinidad. En Descubre tu vibra, cada participante obtiene un mapa entre cuatro categorías: clásica, coqueta, íntima y atrevida. El modo Atrevida mantiene un tono sensual, pero no explícito.</p>
+        <p>En el modo cumpleaños, la app primero adivina el día y luego el mes. En compatibilidad, varias personas escriben sus nombres, eligen un modo y responden en privado. La app compara sus elecciones para encontrar los matches con mayor afinidad. En Descubre tu vibra, cada participante obtiene un mapa entre cuatro categorías: clásica, coqueta, íntima y atrevida. La Botellita funciona como ruleta de dos personas para el piquito opcional. Verdad o Reto funciona como juego independiente con turnos, preguntas y desafíos.</p>
         <p class="example"><strong>Ejemplo:</strong> si dices Sí en las tarjetas 1, 2 y 4, la suma es 1 + 2 + 4 = 7.</p>
         <button class="primary-button" id="explainPlayBtn">Elegir juego</button>
       </article>
     </section>
+    <nav class="bottom-nav" aria-label="Navegación principal">
+      <button type="button" id="navHomeBtn" class="bottom-nav-item active"><span>🏠</span><small>Inicio</small></button>
+      <button type="button" id="navGamesBtn" class="bottom-nav-item"><span>🎮</span><small>Juegos</small></button>
+      <button type="button" id="navOnlineBtn" class="bottom-nav-item"><span>🌐</span><small>Online</small></button>
+      <button type="button" id="navAchievementsBtn" class="bottom-nav-item"><span>🏆</span><small>Logros</small></button>
+    </nav>
+
   </main>
 
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>

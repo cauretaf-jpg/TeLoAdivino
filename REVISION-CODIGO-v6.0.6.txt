@@ -1,0 +1,30 @@
+REVISION CODIGO TELOADIVINO v6.0.6
+
+Problema revisado:
+La barra inferior seguia visible en medio del contenido porque el proyecto acumulaba varias correcciones CSS contradictorias:
+- v6.0: .bottom-nav position:absolute; bottom:14px.
+- v6.0.1: .bottom-nav position:fixed.
+- v6.0.2/v6.0.3: intento de position:relative/static.
+- v6.0.4/v6.0.5: html/body con overflow:hidden y .app-shell con scroll interno.
+
+Causa principal:
+Habia dos modelos de scroll mezclados:
+1. Scroll interno dentro de .app-shell.
+2. Scroll normal del documento.
+
+Al mismo tiempo, JS movia la barra dentro de la pantalla activa. En pantallas largas, eso podia dejar la barra antes de todo el contenido o conservar comportamiento de overlay segun cache/orden CSS.
+
+Correccion aplicada:
+1. La pagina vuelve a usar scroll normal del documento.
+2. .app-shell ya no tiene height fija ni overflow-y interno.
+3. .bottom-nav queda en position:static. No fixed, no sticky, no absolute.
+4. JS ya no inserta la barra dentro de cada pantalla activa. Ahora la deja al final de .app-shell.
+5. service-worker actualizado a cache v6.0.6 para forzar renovacion.
+
+Archivos modificados:
+- styles.css: se agrego bloque v6.0.6 al final con reglas definitivas de scroll/barra.
+- script.js: showScreen ahora llama keepBottomNavAtShellEnd() en vez de moveBottomNavIntoActiveScreen().
+- service-worker.js: cache actualizado a telo-adivino-v6-0-6.
+
+Recomendacion tecnica futura:
+Conviene limpiar styles.css y dejar una sola version final de layout, porque actualmente conserva reglas historicas de v6.0.1 a v6.0.5. Funcionan por cascada, pero hacen mas dificil depurar.

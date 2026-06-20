@@ -1,0 +1,31 @@
+{
+  "rules": {
+    "rooms": {
+      "$roomId": {
+        ".read": true,
+        ".write": true,
+        ".validate": "newData.hasChildren(['code','name','host','hostId','createdAt','updatedAt','status','participants']) && newData.child('code').val() === $roomId && newData.child('status').isString() && newData.child('status').val().matches(/^(lobby|playing|finished)$/)",
+        "code": { ".validate": "newData.isString() && newData.val() === $roomId && newData.val().matches(/^[A-Z0-9]{5}$/)" },
+        "name": { ".validate": "newData.isString() && newData.val().length <= 40" },
+        "host": { ".validate": "newData.isString() && newData.val().length <= 30" },
+        "hostId": { ".validate": "newData.isString() && newData.val().length <= 80" },
+        "createdAt": { ".validate": "newData.isNumber()" },
+        "updatedAt": { ".validate": "newData.isNumber()" },
+        "expiresAt": { ".validate": "!newData.exists() || newData.isNumber()" },
+        "status": { ".validate": "newData.isString() && newData.val().matches(/^(lobby|playing|finished)$/)" },
+        "participants": {
+          "$participantId": {
+            ".validate": "newData.hasChildren(['name','role','joinedAt','lastSeen'])",
+            "name": { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 30" },
+            "role": { ".validate": "newData.isString() && newData.val().matches(/^(Anfitrión|Participante|Manual)$/)" },
+            "joinedAt": { ".validate": "newData.isNumber()" },
+            "lastSeen": { ".validate": "newData.isNumber()" },
+            "$other": { ".validate": false }
+          }
+        },
+        "game": { ".validate": true },
+        "$other": { ".validate": false }
+      }
+    }
+  }
+}

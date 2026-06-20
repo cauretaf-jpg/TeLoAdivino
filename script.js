@@ -35,6 +35,26 @@ const modes = {
     icon: '🧭', eyebrow: 'Mapa de conexión', title: 'Descubre tu vibra', pill: 'Vibra',
     copy: 'Responde preguntas mezcladas y descubre si tu energía dominante es clásica, coqueta, íntima o atrevida.',
     question: '¿Cuál es<br>tu vibra?', resultCopy: 'Tu vibra es'
+  },
+  bottle: {
+    icon: '🍾', eyebrow: 'Juego de grupo', title: 'La Botellita', pill: 'Botellita',
+    copy: 'Configura participantes. La ruleta elegirá 2 personas y mostrará quiénes deben darse un piquito, siempre con alternativa si alguien no quiere.',
+    question: '¿Quiénes<br>saldrán?', resultCopy: 'La Botellita eligió'
+  },
+  truth: {
+    icon: '🎲', eyebrow: 'Juego de grupo', title: 'Verdad o Reto', pill: 'Verdad o Reto',
+    copy: 'Configura participantes, elige una intensidad y juega con verdades, retos o selección aleatoria por turnos.',
+    question: '¿Verdad<br>o reto?', resultCopy: 'Verdad o Reto'
+  },
+  likely: {
+    icon: '🏆', eyebrow: 'Juego de grupo', title: '¿Quién es más probable?', pill: 'Votación',
+    copy: 'Agrega participantes y voten por quién calza mejor con cada pregunta. Al final verás el ranking de la noche.',
+    question: '¿Quién es<br>más probable?', resultCopy: 'Ranking de la noche'
+  },
+  pair: {
+    icon: '❤️', eyebrow: 'Modo parejas', title: '¿Qué tanto se conocen?', pill: 'Parejas',
+    copy: 'Juego para 2 personas. Una intenta adivinar la respuesta de la otra y luego se revela si realmente se conocen.',
+    question: '¿Qué tanto<br>se conocen?', resultCopy: 'Modo parejas'
   }
 };
 
@@ -657,8 +677,10 @@ let vibeAnswers = {};
 let activeVibeQuestions = vibeQuestions;
 let lastShareText = '';
 const HISTORY_KEY = 'teloAdivinoHistoryV41';
-const ROOM_KEY = 'teloAdivinoRoomV42';
+const ROOM_KEY = 'teloAdivinoRoomV45';
 const PARTICIPANT_KEY = 'teloAdivinoParticipantIdV42';
+const ROOM_TTL_MS = 24 * 60 * 60 * 1000;
+const PARTICIPANT_ACTIVE_MS = 2 * 60 * 1000;
 let currentRoom = null;
 let currentRoomCode = null;
 let roomListenerRef = null;
@@ -667,8 +689,40 @@ let onlineQuestionIndex = 0;
 let onlineLocalAnswers = [];
 let lastOnlineResultKey = '';
 let lastRenderedOnlineQuestionKey = '';
+let bottleParticipantCount = 2;
+let bottleParticipantList = ['Persona 1','Persona 2'];
+let selectedBottleIntensity = 'suave';
+let bottleRounds = [];
+let bottlePendingSelection = null;
+let bottleWheelRotation = 0;
+let bottleStats = {};
+let lastRenderedBottleRoundKey = '';
+let truthParticipantCount = 2;
+let truthParticipantList = ['Persona 1','Persona 2'];
+let selectedTruthIntensity = 'suave';
+let truthRounds = [];
+let truthStats = {};
+let lastRenderedTruthRoundKey = '';
+let likelyParticipantCount = 3;
+let likelyParticipantList = ['Persona 1','Persona 2','Persona 3'];
+let likelyQuestionIndex = 0;
+let likelyRounds = [];
+let likelyStats = {};
 
-const screens = ['homeScreen','modeScreen','introScreen','compatSetupScreen','vibeSetupScreen','gameScreen','compatScreen','onlineRoomScreen','roomLobbyScreen','onlineGameScreen','resultScreen','historyScreen','explainScreen'];
+let pairPlayers = ['Persona 1', 'Persona 2'];
+let pairMode = 'dulce';
+let pairRoundIndex = 0;
+let pairPhase = 'guess';
+let pairGuesserIndex = 0;
+let pairGuess = null;
+let pairScore = 0;
+let pairRounds = [];
+let activePairQuestions = [];
+let roomHeartbeatTimer = null;
+const THEME_KEY = 'teloAdivinoThemeV51';
+const ACHIEVEMENTS_KEY = 'teloAdivinoAchievementsV51';
+
+const screens = ['homeScreen','modeScreen','introScreen','compatSetupScreen','vibeSetupScreen','bottleSetupScreen','bottleGameScreen','truthSetupScreen','truthGameScreen','likelySetupScreen','likelyGameScreen','pairSetupScreen','pairGameScreen','gameScreen','compatScreen','onlineRoomScreen','roomLobbyScreen','onlineGameScreen','resultScreen','achievementsScreen','historyScreen','explainScreen'];
 const playCard = document.getElementById('playCard');
 const stepPill = document.getElementById('stepPill');
 const progressDots = document.getElementById('progressDots');
@@ -687,9 +741,95 @@ const compatProgressDots = document.getElementById('compatProgressDots');
 const participantNames = document.getElementById('participantNames');
 const vibeParticipantNamesEl = document.getElementById('vibeParticipantNames');
 
+
+const achievementDefinitions = [
+  { id: 'first_game', icon: '✨', title: 'Primera partida', text: 'Jugaste tu primera partida en TeLoAdivino.' },
+  { id: 'number', icon: '🔢', title: 'Mentalista numérico', text: 'Adivinaste un número.' },
+  { id: 'birthday', icon: '🎂', title: 'Calendario mágico', text: 'Adivinaste un cumpleaños.' },
+  { id: 'compatibility', icon: '💘', title: 'Matchmaker', text: 'Calculaste una compatibilidad mágica.' },
+  { id: 'vibe', icon: '🧭', title: 'Lector/a de vibra', text: 'Descubriste la vibra de una o más personas.' },
+  { id: 'bottle', icon: '🍾', title: 'Rey/Reina de la botellita', text: 'Giraste la ruleta de La Botellita.' },
+  { id: 'truth', icon: '🎲', title: 'Verdad o Reto', text: 'Jugaste una ronda de Verdad o Reto.' },
+  { id: 'likely', icon: '🏆', title: 'Ranking de la noche', text: 'Jugaste ¿Quién es más probable?' },
+  { id: 'pair', icon: '❤️', title: 'Modo parejas', text: 'Jugaste ¿Qué tanto se conocen?' },
+  { id: 'share', icon: '📲', title: 'Resultado compartido', text: 'Usaste una función de compartir.' },
+  { id: 'theme', icon: '🎨', title: 'Cambio de look', text: 'Cambiaste el tema visual de la app.' }
+];
+
+function getAchievements() {
+  try { return JSON.parse(localStorage.getItem(ACHIEVEMENTS_KEY) || '{}') || {}; }
+  catch { return {}; }
+}
+
+function saveAchievements(data) {
+  localStorage.setItem(ACHIEVEMENTS_KEY, JSON.stringify(data));
+}
+
+function unlockAchievement(id) {
+  const achievements = getAchievements();
+  if (!achievements[id]) {
+    achievements[id] = new Date().toISOString();
+    achievements.first_game = achievements.first_game || new Date().toISOString();
+    saveAchievements(achievements);
+  }
+  renderAchievements();
+}
+
+function renderAchievements() {
+  const list = document.getElementById('achievementsList');
+  if (!list) return;
+  const unlocked = getAchievements();
+  list.innerHTML = achievementDefinitions.map(item => {
+    const done = Boolean(unlocked[item.id]);
+    const date = done ? new Date(unlocked[item.id]).toLocaleDateString('es-CL') : 'Pendiente';
+    return `<div class="achievement-card ${done ? 'unlocked' : 'locked'}"><span>${item.icon}</span><div><strong>${item.title}</strong><small>${item.text}</small><em>${date}</em></div></div>`;
+  }).join('');
+}
+
+function openAchievements() {
+  renderAchievements();
+  showScreen('achievementsScreen');
+}
+
+function applyTheme(theme) {
+  const safeTheme = ['default','neon','romantic','dark','summer'].includes(theme) ? theme : 'default';
+  document.body.dataset.theme = safeTheme;
+  localStorage.setItem(THEME_KEY, safeTheme);
+  document.querySelectorAll('.theme-chip').forEach(btn => btn.classList.toggle('active', btn.dataset.theme === safeTheme));
+}
+
+function initTheme() {
+  applyTheme(localStorage.getItem(THEME_KEY) || 'default');
+}
+
 function showScreen(id) {
   screens.forEach(screenId => document.getElementById(screenId).classList.remove('active'));
-  document.getElementById(id).classList.add('active');
+  const activeScreen = document.getElementById(id);
+  activeScreen.classList.add('active');
+  // v6.0.6: la barra inferior ya no se mueve dentro de cada pantalla.
+  // Debe quedar al final del .app-shell para participar del scroll normal.
+  keepBottomNavAtShellEnd();
+  updateBottomNav(id);
+  window.scrollTo({ top: 0, behavior: 'instant' });
+}
+
+function keepBottomNavAtShellEnd() {
+  const nav = document.querySelector('.bottom-nav');
+  const shell = document.querySelector('.app-shell');
+  if (!nav || !shell) return;
+  // Mueve la navegación al final del contenedor principal, después de todas las pantallas.
+  // Como las pantallas inactivas usan display:none, la barra queda después de la pantalla activa.
+  if (nav.parentElement !== shell || shell.lastElementChild !== nav) shell.appendChild(nav);
+}
+
+function updateBottomNav(id) {
+  document.querySelectorAll('.bottom-nav-item').forEach(btn => btn.classList.remove('active'));
+  const gameScreens = ['modeScreen','introScreen','compatSetupScreen','vibeSetupScreen','bottleSetupScreen','bottleGameScreen','truthSetupScreen','truthGameScreen','likelySetupScreen','likelyGameScreen','pairSetupScreen','pairGameScreen','gameScreen','compatScreen','resultScreen','explainScreen'];
+  const onlineScreens = ['onlineRoomScreen','roomLobbyScreen','onlineGameScreen'];
+  if (id === 'homeScreen') document.getElementById('navHomeBtn')?.classList.add('active');
+  else if (id === 'achievementsScreen' || id === 'historyScreen') document.getElementById('navAchievementsBtn')?.classList.add('active');
+  else if (onlineScreens.includes(id)) document.getElementById('navOnlineBtn')?.classList.add('active');
+  else if (gameScreens.includes(id)) document.getElementById('navGamesBtn')?.classList.add('active');
 }
 
 function openModes() { showScreen('modeScreen'); }
@@ -723,6 +863,26 @@ function startSelectedMode() {
 
   if (selectedMode === 'vibe') {
     showScreen('vibeSetupScreen');
+    return;
+  }
+
+  if (selectedMode === 'bottle') {
+    showScreen('bottleSetupScreen');
+    return;
+  }
+
+  if (selectedMode === 'truth') {
+    showScreen('truthSetupScreen');
+    return;
+  }
+
+  if (selectedMode === 'likely') {
+    showScreen('likelySetupScreen');
+    return;
+  }
+
+  if (selectedMode === 'pair') {
+    showScreen('pairSetupScreen');
     return;
   }
 
@@ -802,6 +962,7 @@ function showResult() {
     lastShareText = `TeLoAdivino adivinó mi número: ${total} ✨`;
     if (total === 0) resultNote.textContent = 'Parece que respondiste No en todas las tarjetas.';
   }
+  unlockAchievement(selectedMode === 'birthday' ? 'birthday' : 'number');
   showScreen('resultScreen');
 }
 
@@ -1038,6 +1199,7 @@ function showCompatibilityResult() {
     date: new Date().toISOString(), mode: modeLabels[selectedCompatibilityMode], bestNames,
     score: best.score, title: message.title, type: message.type, reading: message.reading
   });
+  unlockAchievement('compatibility');
   showScreen('resultScreen');
 }
 
@@ -1234,6 +1396,7 @@ function showVibeResult() {
     date: new Date().toISOString(), mode: 'Descubre tu vibra', bestNames: best ? `${getVibeName(best.personA)} + ${getVibeName(best.personB)}` : getVibeName(1),
     score: best ? best.score : profiles[0].percentages[profiles[0].primary], title: `Vibra ${groupInfo.label}`, type: groupInfo.short, reading: groupInfo.reading
   });
+  unlockAchievement('vibe');
   showScreen('resultScreen');
 }
 
@@ -1266,11 +1429,42 @@ function getRoomRef(code) {
   return window.teloDatabase.ref(`rooms/${code}`);
 }
 
+function getIsHost() {
+  const ownId = getParticipantId();
+  return !currentRoom?.hostId || currentRoom.hostId === ownId;
+}
+
+function isRoomExpired(room = currentRoom) {
+  if (!room?.createdAt) return false;
+  return Date.now() - Number(room.createdAt) > ROOM_TTL_MS;
+}
+
+function getRoomStatusLabel(status) {
+  return ({ lobby: 'Lobby', playing: 'Jugando', finished: 'Finalizada' })[status] || 'Lobby';
+}
+
+function startRoomHeartbeat() {
+  if (roomHeartbeatTimer) clearInterval(roomHeartbeatTimer);
+  const tick = async () => {
+    if (!firebaseOnline || !currentRoom?.code) return;
+    const id = getParticipantId();
+    try { await getRoomRef(currentRoom.code).child(`participants/${id}/lastSeen`).set(Date.now()); }
+    catch (_) {}
+  };
+  tick();
+  roomHeartbeatTimer = setInterval(tick, 20000);
+}
+
+function stopRoomHeartbeat() {
+  if (roomHeartbeatTimer) clearInterval(roomHeartbeatTimer);
+  roomHeartbeatTimer = null;
+}
+
 function normalizeRoom(snapshotValue, fallbackCode = '') {
   const value = snapshotValue || {};
   const participantsObj = value.participants || {};
   const participants = Object.entries(participantsObj)
-    .map(([id, participant]) => ({ id, ...participant }))
+    .map(([id, participant]) => ({ id, name: String(participant?.name || 'Invitado').slice(0, 30), role: participant?.role || 'Participante', joinedAt: participant?.joinedAt || 0, lastSeen: participant?.lastSeen || 0 }))
     .sort((a, b) => (a.joinedAt || 0) - (b.joinedAt || 0));
   return {
     code: value.code || fallbackCode,
@@ -1279,6 +1473,7 @@ function normalizeRoom(snapshotValue, fallbackCode = '') {
     hostId: value.hostId || '',
     createdAt: value.createdAt || Date.now(),
     updatedAt: value.updatedAt || value.createdAt || Date.now(),
+    expiresAt: value.expiresAt || ((value.createdAt || Date.now()) + ROOM_TTL_MS),
     status: value.status || 'lobby',
     game: value.game || null,
     participants
@@ -1313,7 +1508,16 @@ function listenToRoom(code) {
       return;
     }
     currentRoom = normalizeRoom(snapshot.val(), code);
+    if (isRoomExpired(currentRoom)) {
+      if (getIsHost()) getRoomRef(code).remove().catch(() => {});
+      alert('Esta sala expiró. Crea una nueva para seguir jugando.');
+      currentRoom = null;
+      localStorage.removeItem(ROOM_KEY);
+      openOnlineRoom();
+      return;
+    }
     saveCurrentRoom();
+    startRoomHeartbeat();
     handleRoomStateChange();
   }, error => {
     console.warn('No se pudo escuchar la sala:', error);
@@ -1360,6 +1564,7 @@ async function createRoom() {
     hostId: participantId,
     createdAt: now,
     updatedAt: now,
+    expiresAt: now + ROOM_TTL_MS,
     status: 'lobby',
     participants: [{ id: participantId, name: host, role: 'Anfitrión', joinedAt: now, lastSeen: now }]
   };
@@ -1373,6 +1578,7 @@ async function createRoom() {
         hostId: participantId,
         createdAt: now,
         updatedAt: now,
+        expiresAt: now + ROOM_TTL_MS,
         status: 'lobby',
         participants: {
           [participantId]: { name: host, role: 'Anfitrión', joinedAt: now, lastSeen: now }
@@ -1404,6 +1610,15 @@ async function joinRoom() {
       const roomSnapshot = await getRoomRef(code).once('value');
       if (!roomSnapshot.exists()) {
         alert('No encontré esa sala. Revisa el código o pide que te compartan nuevamente el QR.');
+        return;
+      }
+      const roomData = roomSnapshot.val() || {};
+      if (roomData.status === 'finished') {
+        alert('Esta sala ya fue finalizada. Pide al anfitrión crear una nueva.');
+        return;
+      }
+      if (Date.now() - Number(roomData.createdAt || Date.now()) > ROOM_TTL_MS) {
+        alert('Esta sala expiró. Pide al anfitrión crear una nueva.');
         return;
       }
       await getRoomRef(code).child(`participants/${participantId}`).set({
@@ -1460,6 +1675,16 @@ function renderLobby(activateScreen = true) {
   document.getElementById('roomLobbyPill').textContent = `Sala ${currentRoom.code}`;
   document.getElementById('roomTitle').textContent = currentRoom.name;
   document.getElementById('roomCodeText').textContent = currentRoom.code;
+  const statusBadge = document.getElementById('roomStatusBadge');
+  if (statusBadge) {
+    statusBadge.textContent = getRoomStatusLabel(currentRoom.status);
+    statusBadge.dataset.status = currentRoom.status || 'lobby';
+  }
+  const hostText = document.getElementById('roomHostText');
+  if (hostText) hostText.textContent = `Anfitrión: ${currentRoom.host || '—'} · Expira en 24 horas`;
+  const isHost = getIsHost();
+  document.getElementById('finishRoomBtn')?.classList.toggle('hidden', !isHost || currentRoom.status === 'finished');
+  document.getElementById('backToLobbyBtn')?.classList.toggle('hidden', !isHost || currentRoom.status === 'lobby' || currentRoom.status === 'finished');
   const linkInput = document.getElementById('inviteLinkInput');
   if (linkInput) linkInput.value = invite;
   const qr = document.getElementById('roomQrImage');
@@ -1470,7 +1695,7 @@ function renderLobby(activateScreen = true) {
       <div class="room-participant">
         <span>${index + 1}</span>
         <strong>${participant.name}</strong>
-        <small>${participant.role || 'Participante'}</small>
+        <small>${participant.role || 'Participante'} · ${Date.now() - Number(participant.lastSeen || 0) < PARTICIPANT_ACTIVE_MS ? 'en línea' : 'sin actividad'}</small>
       </div>
     `).join('') || '<div class="empty-history">Aún no hay participantes.</div>';
   }
@@ -1483,9 +1708,14 @@ function renderLobby(activateScreen = true) {
 
 async function clearCurrentRoom() {
   const code = currentRoom?.code || currentRoomCode;
+  const isHost = getIsHost();
   stopRoomListener();
+  stopRoomHeartbeat();
   if (firebaseOnline && code) {
-    try { await getRoomRef(code).remove(); } catch (error) { console.warn('No se pudo eliminar la sala:', error); }
+    try {
+      if (isHost) await getRoomRef(code).remove();
+      else await getRoomRef(code).child(`participants/${getParticipantId()}`).remove();
+    } catch (error) { console.warn('No se pudo salir/cerrar la sala:', error); }
   }
   currentRoom = null;
   currentRoomCode = null;
@@ -1497,6 +1727,39 @@ async function clearCurrentRoom() {
   openOnlineRoom();
 }
 
+async function leaveCurrentRoom() {
+  if (!currentRoom?.code) return openOnlineRoom();
+  const isHost = getIsHost();
+  const message = isHost
+    ? 'Eres anfitrión. Si sales, se cerrará la sala para todos. ¿Continuar?'
+    : '¿Quieres abandonar esta sala?';
+  if (!confirm(message)) return;
+  await clearCurrentRoom();
+}
+
+async function finishCurrentRoom() {
+  if (!firebaseOnline || !currentRoom?.code) return;
+  if (!getIsHost()) return alert('Solo la persona anfitriona puede finalizar la sala.');
+  if (!confirm('¿Finalizar la partida para todas las personas?')) return;
+  try {
+    await getRoomRef(currentRoom.code).update({ status: 'finished', updatedAt: Date.now() });
+  } catch (error) {
+    console.warn('No se pudo finalizar la sala:', error);
+    alert('No se pudo finalizar la sala. Revisa la conexión.');
+  }
+}
+
+async function returnRoomToLobby() {
+  if (!firebaseOnline || !currentRoom?.code) return;
+  if (!getIsHost()) return alert('Solo la persona anfitriona puede volver al lobby.');
+  try {
+    await getRoomRef(currentRoom.code).update({ status: 'lobby', updatedAt: Date.now(), game: null });
+  } catch (error) {
+    console.warn('No se pudo volver al lobby:', error);
+    alert('No se pudo volver al lobby. Revisa la conexión.');
+  }
+}
+
 
 function getCurrentParticipant() {
   const id = getParticipantId();
@@ -1504,29 +1767,72 @@ function getCurrentParticipant() {
 }
 
 function getActiveOnlineParticipants() {
-  return (currentRoom?.participants || []).filter(participant => (participant.role || '').toLowerCase() !== 'manual');
+  return (currentRoom?.participants || []).filter(participant => {
+    if ((participant.role || '').toLowerCase() === 'manual') return false;
+    if (!participant.lastSeen) return true;
+    return Date.now() - Number(participant.lastSeen) < 10 * 60 * 1000;
+  });
 }
 
 function updateOnlineStartControls() {
   const button = document.getElementById('startOnlineCompatibilityBtn');
+  const bottleButton = document.getElementById('startOnlineBottleBtn');
+  const truthButton = document.getElementById('startOnlineTruthBtn');
   const hint = document.getElementById('onlineStartHint');
   const select = document.getElementById('onlineCompatibilityModeSelect');
+  const bottleSelect = document.getElementById('onlineBottleIntensitySelect');
+  const bottleToggle = document.getElementById('onlineBottlePhysicalToggle');
   if (!button || !hint) return;
   const activeParticipants = getActiveOnlineParticipants();
   const ownId = getParticipantId();
   const isHost = !currentRoom?.hostId || currentRoom.hostId === ownId;
-  const canStart = Boolean(firebaseOnline && currentRoom?.code && activeParticipants.length >= 2 && isHost && currentRoom.status !== 'playing');
+  const canStart = Boolean(firebaseOnline && currentRoom?.code && activeParticipants.length >= 2 && isHost && currentRoom.status === 'lobby');
   button.disabled = !canStart;
-  if (select) select.disabled = currentRoom?.status === 'playing';
+  if (bottleButton) bottleButton.disabled = !canStart;
+  if (truthButton) truthButton.disabled = !canStart;
+  if (select) select.disabled = currentRoom?.status !== 'lobby';
+  if (bottleSelect) bottleSelect.disabled = currentRoom?.status !== 'lobby';
+  if (bottleToggle) bottleToggle.disabled = currentRoom?.status !== 'lobby';
   if (!firebaseOnline) hint.textContent = 'Firebase no está conectado. Revisa internet y vuelve a cargar.';
   else if (!isHost) hint.textContent = 'Solo la persona anfitriona puede iniciar el juego.';
   else if (activeParticipants.length < 2) hint.textContent = 'Necesitas al menos 2 participantes conectados desde sus celulares.';
-  else if (currentRoom?.status === 'playing') hint.textContent = 'La partida ya está iniciada.';
-  else hint.textContent = 'Cuando estén todas las personas, inicia Compatibilidad mágica online.';
+  else if (currentRoom?.status !== 'lobby') hint.textContent = currentRoom?.status === 'finished' ? 'La sala fue finalizada.' : 'La partida ya está iniciada.';
+  else hint.textContent = 'Cuando estén todas las personas, inicia Compatibilidad mágica, La Botellita o Verdad o Reto online.';
+}
+
+function updateOnlineGameActions() {
+  const isHost = getIsHost();
+  document.getElementById('onlineBackToLobbyBtn')?.classList.toggle('hidden', !isHost || currentRoom?.status !== 'playing');
+  document.getElementById('onlineFinishRoomBtn')?.classList.toggle('hidden', !isHost || currentRoom?.status === 'finished');
 }
 
 function handleRoomStateChange(force = false) {
   if (!currentRoom) return;
+  if (currentRoom.status === 'finished') {
+    showScreen('onlineGameScreen');
+    const pill = document.getElementById('onlineGamePill');
+    const eyebrow = document.getElementById('onlineGameEyebrow');
+    const title = document.getElementById('onlineGameTitle');
+    const help = document.getElementById('onlineGameHelp');
+    const options = document.getElementById('onlineGameOptions');
+    const dots = document.getElementById('onlineGameProgressDots');
+    if (pill) pill.textContent = `Sala ${currentRoom.code}`;
+    if (eyebrow) eyebrow.textContent = 'Sala finalizada';
+    if (title) title.textContent = 'La partida terminó';
+    if (help) help.textContent = 'El anfitrión finalizó esta sala. Puedes crear o unirte a otra sala.';
+    if (options) options.innerHTML = '<button class="primary-button" id="goOnlineAfterFinishBtn">Crear o unirse a otra sala</button>';
+    if (dots) dots.innerHTML = '';
+    document.getElementById('goOnlineAfterFinishBtn')?.addEventListener('click', clearCurrentRoom);
+    return;
+  }
+  if (currentRoom.status === 'playing' && currentRoom.game?.type === 'bottle') {
+    renderOnlineBottle(force);
+    return;
+  }
+  if (currentRoom.status === 'playing' && currentRoom.game?.type === 'truth') {
+    renderOnlineTruth(force);
+    return;
+  }
   if (currentRoom.status === 'playing' && currentRoom.game?.type === 'compatibility') {
     if (currentRoom.game.result) {
       showOnlineCompatibilityResult(currentRoom.game.result);
@@ -1610,6 +1916,7 @@ function renderOnlineCompatibility(force = false) {
 
   if (!participant) {
     showScreen('onlineGameScreen');
+    updateOnlineGameActions();
     pill.textContent = `Sala ${currentRoom.code}`;
     eyebrow.textContent = 'Participante no registrado';
     title.textContent = 'Únete a la sala para jugar';
@@ -1622,6 +1929,7 @@ function renderOnlineCompatibility(force = false) {
 
   if (!questions.length) {
     showScreen('onlineGameScreen');
+    updateOnlineGameActions();
     pill.textContent = 'Preparando';
     eyebrow.textContent = 'Juego online';
     title.textContent = 'Preparando preguntas';
@@ -1640,6 +1948,7 @@ function renderOnlineCompatibility(force = false) {
       return;
     }
     showScreen('onlineGameScreen');
+    updateOnlineGameActions();
     pill.textContent = `Sala ${currentRoom.code}`;
     eyebrow.textContent = `${getOnlineModeLabel(game.mode)} · respuestas guardadas`;
     title.textContent = 'Esperando al resto';
@@ -1662,6 +1971,7 @@ function renderOnlineCompatibility(force = false) {
 
   const question = questions[onlineQuestionIndex];
   showScreen('onlineGameScreen');
+  updateOnlineGameActions();
   pill.textContent = `${participant.name} · ${onlineQuestionIndex + 1} de ${questions.length}`;
   eyebrow.textContent = `Compatibilidad ${getOnlineModeLabel(game.mode)}`;
   title.textContent = question.question;
@@ -1742,6 +2052,7 @@ function renderOnlineLeaderboard(pairs) {
 
 function renderOnlineResultPending(done, total) {
   showScreen('onlineGameScreen');
+  updateOnlineGameActions();
   const pill = document.getElementById('onlineGamePill');
   const eyebrow = document.getElementById('onlineGameEyebrow');
   const title = document.getElementById('onlineGameTitle');
@@ -1852,6 +2163,962 @@ function showOnlineCompatibilityResult(persistedResult = null) {
   showScreen('resultScreen');
 }
 
+
+const bottleChallenges = {
+  suave: [
+    { type: 'Verdad', text: 'Cada persona dice una cosa buena de la otra.' },
+    { type: 'Reto', text: 'Inventen un saludo secreto de 3 segundos.' },
+    { type: 'Pregunta', text: '¿Qué plan simple harían juntos sin pensarlo mucho?' },
+    { type: 'Reto', text: 'Hagan una pose dramática como portada de película.' },
+    { type: 'Verdad', text: 'Digan qué primera impresión les dio la otra persona.' }
+  ],
+  fiesta: [
+    { type: 'Verdad', text: 'El grupo vota: ¿quién de los dos sería peor guardando un secreto?' },
+    { type: 'Reto', text: 'Ambos deben inventar un apodo para el otro por una ronda.' },
+    { type: 'Reto', text: 'Hagan una mini escena de teleserie de 10 segundos.' },
+    { type: 'Pregunta', text: '¿Quién de los dos sobreviviría mejor en un reality?' },
+    { type: 'Reto', text: 'Elijan una canción que represente su dúo.' }
+  ],
+  coqueta: [
+    { type: 'Coqueta', text: 'Mantengan la mirada 5 segundos o cambien por un cumplido sincero.' },
+    { type: 'Coqueta', text: 'Cada persona dice una green flag de la otra.' },
+    { type: 'Coqueta', text: 'Elijan una cita ideal que harían juntos.' },
+    { type: 'Coqueta', text: 'Digan una frase coqueta sin reírse.' },
+    { type: 'Coqueta', text: 'El grupo vota quién de los dos tiene más cara de mandar indirectas.' }
+  ],
+  atrevida: [
+    { type: 'Atrevida', text: 'Mantengan la mirada 7 segundos o cambien por una pregunta atrevida.' },
+    { type: 'Atrevida', text: 'Digan algo atractivo de la energía de la otra persona, sin ser explícitos.' },
+    { type: 'Atrevida', text: 'Elijan: tensión lenta, directa, misteriosa o juguetona.' },
+    { type: 'Atrevida', text: 'Susurra una frase misteriosa sin decir nada explícito, o cambia por una verdad.' },
+    { type: 'Atrevida', text: 'El grupo vota si hay más química tierna, coqueta o intensa.' }
+  ]
+};
+
+const bottlePhysicalChallenges = {
+  coqueta: [
+    { type: 'Piquito opcional', text: 'Si ambas personas quieren: dense un piquito. Si no, cambien por un cumplido mirando a los ojos.' },
+    { type: 'Reto físico opcional', text: 'Si ambas personas quieren: tómense de las manos 5 segundos. Si no, respondan qué plan harían juntos.' }
+  ],
+  atrevida: [
+    { type: 'Piquito opcional', text: 'Si ambas personas quieren: dense un piquito. Si no, elijan una pregunta atrevida verbal.' },
+    { type: 'Reto físico opcional', text: 'Si ambas personas quieren: abrazo de 5 segundos. Si no, digan una green flag del otro.' }
+  ]
+};
+
+
+function clampParticipantCount(value, min = 2, max = 30) {
+  const number = Number.parseInt(value, 10);
+  if (Number.isNaN(number)) return min;
+  return Math.max(min, Math.min(max, number));
+}
+
+function syncCountInput(id, value) {
+  const input = document.getElementById(id);
+  if (input) input.value = String(value);
+}
+
+function applyCompatParticipantCount() {
+  const input = document.getElementById('compatParticipantCountInput');
+  compatParticipantCount = clampParticipantCount(input?.value, 2, 30);
+  syncCountInput('compatParticipantCountInput', compatParticipantCount);
+  initTheme();
+renderParticipantNameInputs();
+}
+
+function applyVibeParticipantCount() {
+  const input = document.getElementById('vibeParticipantCountInput');
+  vibeParticipantCount = clampParticipantCount(input?.value, 1, 30);
+  syncCountInput('vibeParticipantCountInput', vibeParticipantCount);
+  renderVibeParticipantNameInputs();
+}
+
+function applyBottleParticipantCount() {
+  collectBottleParticipantNames();
+  const input = document.getElementById('bottleParticipantCountInput');
+  bottleParticipantCount = clampParticipantCount(input?.value, 2, 30);
+  syncCountInput('bottleParticipantCountInput', bottleParticipantCount);
+  renderBottleParticipantNameInputs();
+}
+
+function applyTruthParticipantCount() {
+  collectTruthParticipantNames();
+  const input = document.getElementById('truthParticipantCountInput');
+  truthParticipantCount = clampParticipantCount(input?.value, 2, 30);
+  syncCountInput('truthParticipantCountInput', truthParticipantCount);
+  renderTruthParticipantNameInputs();
+}
+
+function randomItem(items) { return items[Math.floor(Math.random() * items.length)]; }
+
+function collectBottleParticipantNames() {
+  const inputs = document.querySelectorAll('#bottleParticipantNames input');
+  bottleParticipantList = Array.from(inputs).map((input, index) => input.value.trim() || `Persona ${index + 1}`);
+}
+
+function renderBottleParticipantNameInputs() {
+  const container = document.getElementById('bottleParticipantNames');
+  if (!container) return;
+  const previous = bottleParticipantList || [];
+  container.innerHTML = Array.from({ length: bottleParticipantCount }, (_, index) => {
+    const value = previous[index] || `Persona ${index + 1}`;
+    return `<label class="name-field"><span>Persona ${index + 1}</span><input type="text" maxlength="22" value="${value}"></label>`;
+  }).join('');
+  renderBottleWheel(bottleParticipantList, null, false);
+}
+
+function escapeHtml(value) {
+  return String(value).replace(/[&<>'"]/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#039;', '"': '&quot;' }[char]));
+}
+
+function getWheelSliceColor(index) {
+  const palette = ['#f9a8d4','#f0abfc','#c4b5fd','#93c5fd','#99f6e4','#bbf7d0','#fde68a','#fdba74','#fca5a5','#ddd6fe'];
+  return palette[index % palette.length];
+}
+
+function polarToCartesian(cx, cy, r, angleDeg) {
+  const rad = (angleDeg - 90) * Math.PI / 180;
+  return { x: cx + (r * Math.cos(rad)), y: cy + (r * Math.sin(rad)) };
+}
+
+function describeArc(cx, cy, r, startAngle, endAngle) {
+  const start = polarToCartesian(cx, cy, r, endAngle);
+  const end = polarToCartesian(cx, cy, r, startAngle);
+  const largeArcFlag = endAngle - startAngle <= 180 ? '0' : '1';
+  return `M ${cx} ${cy} L ${start.x} ${start.y} A ${r} ${r} 0 ${largeArcFlag} 0 ${end.x} ${end.y} Z`;
+}
+
+function renderBottleWheel(participants = bottleParticipantList, selectedName = null, animate = false) {
+  const visual = document.getElementById('bottleVisual');
+  if (!visual) return;
+  const names = (participants || []).filter(Boolean);
+  const count = Math.max(names.length, 2);
+  if (!names.length) {
+    visual.innerHTML = '<div class="empty-wheel">Agrega participantes</div>';
+    return;
+  }
+  const slice = 360 / count;
+  const slices = names.map((name, index) => {
+    const start = index * slice;
+    const end = start + slice;
+    const mid = start + slice / 2;
+    const textPoint = polarToCartesian(110, 110, 70, mid);
+    const shortName = name.length > 12 ? `${name.slice(0, 11)}…` : name;
+    return `<path d="${describeArc(110, 110, 104, start, end)}" fill="${getWheelSliceColor(index)}" stroke="rgba(255,255,255,.92)" stroke-width="2"></path><text x="${textPoint.x}" y="${textPoint.y}" transform="rotate(${mid} ${textPoint.x} ${textPoint.y})" text-anchor="middle" dominant-baseline="middle">${escapeHtml(shortName)}</text>`;
+  }).join('');
+  let wheelRotation = bottleWheelRotation;
+  if (selectedName) {
+    const selectedIndex = Math.max(0, names.indexOf(selectedName));
+    const targetCenter = selectedIndex * slice + slice / 2;
+    const extra = 1080 + Math.floor(Math.random() * 360);
+    wheelRotation += extra + (360 - targetCenter);
+    bottleWheelRotation = wheelRotation;
+  }
+  const animateClass = animate ? ' spinning' : '';
+  visual.innerHTML = `<div class="roulette-pointer">▼</div><div class="roulette-wheel-wrap${animateClass}" style="transform: rotate(${wheelRotation}deg)"><svg class="roulette-wheel" viewBox="0 0 220 220" role="img" aria-label="Ruleta de participantes">${slices}<circle cx="110" cy="110" r="28" fill="rgba(255,255,255,.95)" stroke="rgba(190,24,93,.22)" stroke-width="2"></circle><text x="110" y="114" text-anchor="middle" class="wheel-center">🍾</text></svg></div>`;
+}
+
+function updateBottleStats(pair = null) {
+  if (pair) pair.forEach(name => { bottleStats[name] = (bottleStats[name] || 0) + 1; });
+  const statsEl = document.getElementById('bottleStats');
+  if (!statsEl) return;
+  const entries = Object.entries(bottleStats).sort((a,b) => b[1] - a[1]).slice(0, 6);
+  statsEl.innerHTML = entries.length ? `<strong>Estadísticas de la noche</strong>${entries.map(([name, count]) => `<span>${escapeHtml(name)}: ${count} vez/veces elegido/a</span>`).join('')}` : '';
+}
+
+function getBottleChallenge(intensity = selectedBottleIntensity, allowPhysical = false) {
+  const pool = [...(bottleChallenges[intensity] || bottleChallenges.suave)];
+  if (allowPhysical && (intensity === 'coqueta' || intensity === 'atrevida')) {
+    pool.push(...(bottlePhysicalChallenges[intensity] || []));
+  }
+  return randomItem(pool);
+}
+
+function pickTwoParticipants(list) {
+  const safe = [...list].filter(Boolean);
+  if (safe.length < 2) return null;
+  const firstIndex = Math.floor(Math.random() * safe.length);
+  let secondIndex = Math.floor(Math.random() * safe.length);
+  while (secondIndex === firstIndex) secondIndex = Math.floor(Math.random() * safe.length);
+  return [safe[firstIndex], safe[secondIndex]];
+}
+
+function startBottleGame() {
+  unlockAchievement('bottle');
+  collectBottleParticipantNames();
+  bottleRounds = [];
+  bottlePendingSelection = null;
+  bottleStats = {};
+  bottleWheelRotation = 0;
+  selectedBottleIntensity = document.querySelector('.bottle-intensity-option.active')?.dataset.bottleIntensity || 'suave';
+  showScreen('bottleGameScreen');
+  renderBottleRound(null);
+}
+
+function pickOneParticipant(list, excludeName = '') {
+  const safe = [...list].filter(Boolean).filter(name => name !== excludeName);
+  if (!safe.length) return null;
+  return safe[Math.floor(Math.random() * safe.length)];
+}
+
+function spinLocalBottle(replaceLast = false) {
+  const selected = pickOneParticipant(bottleParticipantList, bottlePendingSelection || '');
+  if (!selected) return;
+  const event = { selected, createdAt: Date.now() };
+  renderBottleWheel(bottleParticipantList, selected, true);
+
+  if (!bottlePendingSelection || replaceLast) {
+    bottlePendingSelection = selected;
+    renderBottleSelection(event, false);
+    return;
+  }
+
+  const pair = [bottlePendingSelection, selected];
+  const challenge = getPiquitoChallenge();
+  const round = { pair, challenge, intensity: selectedBottleIntensity, createdAt: Date.now() };
+  bottleRounds.unshift(round);
+  updateBottleStats(pair);
+  bottlePendingSelection = null;
+  renderBottleRound(round);
+}
+
+function getPiquitoChallenge() {
+  return {
+    type: 'Piquito',
+    text: 'La ruleta decidió: estas dos personas deben darse un piquito. Regla básica: solo si ambas aceptan; si alguien no quiere, pueden cambiarlo por un cumplido mirando a los ojos o una verdad incómoda.'
+  };
+}
+
+function renderBottleSelection(event, isSecond = false) {
+  const visual = document.getElementById('bottleVisual');
+  const pill = document.getElementById('bottlePill');
+  const eyebrow = document.getElementById('bottleEyebrow');
+  const title = document.getElementById('bottleTitle');
+  const pairEl = document.getElementById('bottlePair');
+  const challengeEl = document.getElementById('bottleChallenge');
+  const log = document.getElementById('bottleLog');
+  if (!visual || !pill || !eyebrow || !title || !pairEl || !challengeEl || !log) return;
+  pill.textContent = `La Botellita · ${selectedBottleIntensity}`;
+  eyebrow.textContent = 'Primera persona seleccionada';
+  title.textContent = `${event.selected} salió primero`;
+  pairEl.innerHTML = `<strong>${event.selected}</strong><span>+</span><strong>?</strong>`;
+  challengeEl.innerHTML = '<strong>Falta una persona</strong><p>Gira la ruleta otra vez para elegir a la segunda persona.</p>';
+  log.innerHTML = bottleRounds.slice(0, 5).map((item, index) => `<div><strong>${index + 1}. ${item.pair[0]} + ${item.pair[1]}</strong><small>${item.challenge.type}</small></div>`).join('');
+  updateBottleStats();
+}
+
+function renderBottleRound(round) {
+  const visual = document.getElementById('bottleVisual');
+  const pill = document.getElementById('bottlePill');
+  const eyebrow = document.getElementById('bottleEyebrow');
+  const title = document.getElementById('bottleTitle');
+  const pairEl = document.getElementById('bottlePair');
+  const challengeEl = document.getElementById('bottleChallenge');
+  const log = document.getElementById('bottleLog');
+  if (!visual || !pill || !eyebrow || !title || !pairEl || !challengeEl || !log) return;
+  pill.textContent = `La Botellita · ${selectedBottleIntensity}`;
+  if (!round) {
+    eyebrow.textContent = 'Ruleta de la botellita';
+    title.textContent = 'Gira para elegir a la primera persona';
+    pairEl.textContent = 'La primera vuelta elige una persona. La segunda vuelta elige a la otra.';
+    challengeEl.textContent = 'Cuando salgan dos personas, la app dirá quiénes deben darse un piquito. Si alguien no quiere, se cambia por alternativa verbal.';
+    log.innerHTML = '';
+    updateBottleStats();
+    renderBottleWheel(bottleParticipantList, null, false);
+    return;
+  }
+  renderBottleWheel(bottleParticipantList, round.pair[1], true);
+  eyebrow.textContent = round.challenge.type;
+  title.textContent = 'La ruleta eligió a 2 personas';
+  pairEl.innerHTML = `<strong>${round.pair[0]}</strong><span>+</span><strong>${round.pair[1]}</strong>`;
+  challengeEl.innerHTML = `<strong>${round.challenge.type}</strong><p>${round.challenge.text}</p>`;
+  log.innerHTML = bottleRounds.slice(0, 5).map((item, index) => `<div><strong>${index + 1}. ${item.pair[0]} + ${item.pair[1]}</strong><small>${item.challenge.type}</small></div>`).join('');
+  updateBottleStats();
+}
+
+function getOnlineBottleConfig() {
+  return {
+    intensity: document.getElementById('onlineBottleIntensitySelect')?.value || 'suave',
+    allowPhysical: document.getElementById('onlineBottlePhysicalToggle')?.checked || false
+  };
+}
+
+async function startOnlineBottleGame() {
+  if (!firebaseOnline || !currentRoom?.code) {
+    alert('Firebase no está conectado. Recarga la página e intenta nuevamente.');
+    return;
+  }
+  const activeParticipants = getActiveOnlineParticipants();
+  if (activeParticipants.length < 2) {
+    alert('Necesitas al menos 2 participantes conectados desde sus celulares.');
+    return;
+  }
+  const ownId = getParticipantId();
+  if (currentRoom.hostId && currentRoom.hostId !== ownId) {
+    alert('Solo la persona anfitriona puede iniciar La Botellita.');
+    return;
+  }
+  const config = getOnlineBottleConfig();
+  lastRenderedBottleRoundKey = '';
+  try {
+    await getRoomRef(currentRoom.code).update({
+      status: 'playing',
+      updatedAt: Date.now(),
+      game: {
+        type: 'bottle',
+        intensity: config.intensity,
+        allowPhysical: config.allowPhysical,
+        startedAt: Date.now(),
+        pendingSelection: null,
+        rounds: []
+      }
+    });
+  } catch (error) {
+    console.warn('No se pudo iniciar La Botellita:', error);
+    alert('No se pudo iniciar La Botellita. Revisa la conexión o las reglas de Firebase.');
+  }
+}
+
+function renderOnlineBottle(force = false) {
+  const game = currentRoom?.game;
+  if (!game || game.type !== 'bottle') return;
+  const options = document.getElementById('onlineGameOptions');
+  const dots = document.getElementById('onlineGameProgressDots');
+  const pill = document.getElementById('onlineGamePill');
+  const eyebrow = document.getElementById('onlineGameEyebrow');
+  const title = document.getElementById('onlineGameTitle');
+  const help = document.getElementById('onlineGameHelp');
+  if (!options || !dots || !pill || !eyebrow || !title || !help) return;
+  const rounds = Array.isArray(game.rounds) ? game.rounds : [];
+  const latest = rounds[rounds.length - 1] || null;
+  const pending = game.pendingSelection || null;
+  const ownId = getParticipantId();
+  const isHost = !currentRoom?.hostId || currentRoom.hostId === ownId;
+  const key = `${currentRoom.code}:${game.startedAt}:${latest?.createdAt || 'empty'}:${pending?.createdAt || 'nopending'}:${rounds.length}`;
+  if (!force && lastRenderedBottleRoundKey === key && document.getElementById('onlineGameScreen')?.classList.contains('active')) return;
+  lastRenderedBottleRoundKey = key;
+  showScreen('onlineGameScreen');
+  updateOnlineGameActions();
+  pill.textContent = `La Botellita · ${currentRoom.code}`;
+  eyebrow.textContent = latest ? latest.challenge.type : pending ? 'Primera persona seleccionada' : `Modo ${game.intensity || 'suave'}`;
+  title.textContent = latest ? 'La ruleta eligió a 2 personas' : pending ? `${pending.name} salió primero` : 'Esperando primer giro';
+  help.textContent = 'La ruleta elige primero a una persona y luego a otra. Cuando salgan dos, aparecerá el piquito. Nadie está obligado: siempre pueden cambiarlo por una alternativa verbal.';
+  let selectionHtml = '';
+  if (latest) {
+    selectionHtml = `<div class="bottle-pair online"><strong>${latest.pair[0].name}</strong><span>+</span><strong>${latest.pair[1].name}</strong></div>`;
+  } else if (pending) {
+    selectionHtml = `<div class="bottle-pair online"><strong>${pending.name}</strong><span>+</span><strong>?</strong></div>`;
+  } else {
+    selectionHtml = '<div class="online-wait-card"><strong>El anfitrión debe girar la ruleta.</strong></div>';
+  }
+  const challengeHtml = latest ? `<div class="bottle-card"><strong>${latest.challenge.type}</strong><p>${latest.challenge.text}</p></div>` : pending ? '<div class="bottle-card"><strong>Falta una persona</strong><p>Gira la ruleta otra vez para elegir a la segunda persona.</p></div>' : '';
+  const spinLabel = pending ? 'Girar segunda persona' : 'Girar primera persona';
+  const spinButton = isHost ? `<button class="primary-button" id="spinOnlineBottleBtn">${spinLabel}</button><button class="secondary-button" id="changeOnlineBottleBtn">Reiniciar selección</button>` : '<div class="online-wait-card"><strong>Espera a que el anfitrión gire.</strong></div>';
+  const logHtml = rounds.length ? `<div class="bottle-log">${rounds.slice(-5).reverse().map((round, index) => `<div><strong>${index + 1}. ${round.pair[0].name} + ${round.pair[1].name}</strong><small>${round.challenge.type}</small></div>`).join('')}</div>` : '';
+  options.innerHTML = `${selectionHtml}${challengeHtml}<div class="bottle-actions">${spinButton}</div>${logHtml}`;
+  dots.innerHTML = '';
+  document.getElementById('spinOnlineBottleBtn')?.addEventListener('click', () => spinOnlineBottle(false));
+  document.getElementById('changeOnlineBottleBtn')?.addEventListener('click', () => resetOnlineBottleSelection());
+}
+
+async function resetOnlineBottleSelection() {
+  if (!firebaseOnline || !currentRoom?.code || currentRoom.game?.type !== 'bottle') return;
+  try {
+    await getRoomRef(currentRoom.code).child('game/pendingSelection').set(null);
+  } catch (error) {
+    console.warn('No se pudo reiniciar la selección:', error);
+  }
+}
+
+function pickOneOnlineParticipant(list, excludeId = '') {
+  const safe = [...list].filter(Boolean).filter(person => person.id !== excludeId);
+  if (!safe.length) return null;
+  return safe[Math.floor(Math.random() * safe.length)];
+}
+
+async function spinOnlineBottle() {
+  if (!firebaseOnline || !currentRoom?.code || currentRoom.game?.type !== 'bottle') return;
+  const activeParticipants = getActiveOnlineParticipants();
+  const game = currentRoom.game;
+  const pending = game.pendingSelection || null;
+  const selected = pickOneOnlineParticipant(activeParticipants, pending?.id || '');
+  if (!selected) return;
+
+  try {
+    if (!pending) {
+      await getRoomRef(currentRoom.code).child('game/pendingSelection').set({ id: selected.id, name: selected.name, createdAt: Date.now() });
+      return;
+    }
+
+    const challenge = getPiquitoChallenge();
+    const round = {
+      pair: [{ id: pending.id, name: pending.name }, { id: selected.id, name: selected.name }],
+      challenge,
+      intensity: game.intensity || 'suave',
+      createdAt: Date.now()
+    };
+    const currentRounds = Array.isArray(game.rounds) ? [...game.rounds] : [];
+    currentRounds.push(round);
+    await getRoomRef(currentRoom.code).child('game').update({
+      pendingSelection: null,
+      rounds: currentRounds.slice(-30)
+    });
+  } catch (error) {
+    console.warn('No se pudo girar la ruleta:', error);
+    alert('No se pudo girar. Revisa la conexión.');
+  }
+}
+
+
+
+const pairQuestionSets = {
+  dulce: [
+    { q: '¿Qué plan elegiría para una tarde perfecta?', options: ['Café y conversación', 'Película en casa', 'Paseo sin rumbo', 'Comida rica'] },
+    { q: '¿Qué detalle le haría más feliz?', options: ['Una nota bonita', 'Un abrazo largo', 'Una sorpresa simple', 'Que recuerden algo importante'] },
+    { q: '¿Qué canción pondría para una cita?', options: ['Algo romántico', 'Algo nostálgico', 'Algo bailable', 'Algo tranquilo'] },
+    { q: '¿Qué elegiría para relajarse?', options: ['Dormir', 'Ver una serie', 'Salir a caminar', 'Escuchar música'] },
+    { q: '¿Qué gesto valora más?', options: ['Escucha real', 'Paciencia', 'Humor', 'Cariño claro'] },
+    { q: '¿Qué comida elegiría para compartir?', options: ['Pizza', 'Sushi', 'Hamburguesa', 'Algo dulce'] },
+    { q: '¿Qué tipo de mensaje le gusta más?', options: ['Tierno', 'Gracioso', 'Directo', 'Inesperado'] },
+    { q: '¿Qué plan repetiría sin dudar?', options: ['Mirador', 'Cine', 'Cena', 'Viaje corto'] },
+    { q: '¿Qué le da más tranquilidad?', options: ['Claridad', 'Rutina bonita', 'Tiempo juntos', 'Espacio personal'] },
+    { q: '¿Qué le parece más romántico?', options: ['Una carta', 'Una canción', 'Una salida sorpresa', 'Un gesto cotidiano'] }
+  ],
+  profundo: [
+    { q: '¿Qué necesita para sentirse en confianza?', options: ['Tiempo', 'Honestidad', 'Cuidado', 'Comunicación clara'] },
+    { q: '¿Qué le cuesta más expresar?', options: ['Lo que siente', 'Lo que necesita', 'Sus miedos', 'Sus límites'] },
+    { q: '¿Qué tipo de apoyo prefiere?', options: ['Consejo directo', 'Acompañamiento', 'Cariño', 'Soluciones concretas'] },
+    { q: '¿Qué le da más paz en una relación?', options: ['Estabilidad', 'Libertad', 'Lealtad', 'Conversación'] },
+    { q: '¿Qué conversación no evitaría?', options: ['Expectativas', 'Límites', 'Miedos', 'Planes futuros'] },
+    { q: '¿Qué valora más cuando hay conflicto?', options: ['Calma', 'Escucha', 'Disculpas reales', 'Resolver rápido'] },
+    { q: '¿Qué le hace abrirse emocionalmente?', options: ['Paciencia', 'Coherencia', 'Ternura', 'Seguridad'] },
+    { q: '¿Qué vínculo busca construir?', options: ['Honesto', 'Tranquilo', 'Intenso', 'Comprometido'] },
+    { q: '¿Qué herida cuidaría más?', options: ['Desconfianza', 'Abandono', 'Inseguridad', 'Decepción'] },
+    { q: '¿Qué promesa pesa más?', options: ['Estar presente', 'Decir la verdad', 'Cuidar el vínculo', 'Respetar tiempos'] }
+  ],
+  coqueta: [
+    { q: '¿Qué indirecta usaría primero?', options: ['Un meme', 'Una canción', 'Un “me acordé de ti”', 'Una invitación'] },
+    { q: '¿Qué le parece más coqueto?', options: ['La mirada', 'La risa', 'La atención', 'La seguridad'] },
+    { q: '¿Qué plan elegiría para subir la tensión?', options: ['Mirador de noche', 'Película en casa', 'Karaoke', 'Cena con luz baja'] },
+    { q: '¿Qué frase le dejaría pensando?', options: ['“Tienes algo”', '“Quédate un rato”', '“Me gusta tu energía”', '“Quiero verte”'] },
+    { q: '¿Qué delata que le gusta alguien?', options: ['Se ríe más', 'Se pone nervioso/a', 'Se acerca más', 'Se hace el/la interesante'] },
+    { q: '¿Qué tipo de coqueteo prefiere?', options: ['Sutil', 'Divertido', 'Directo', 'Misterioso'] },
+    { q: '¿Qué gesto le parece más atractivo?', options: ['Contacto visual', 'Un cumplido', 'Cercanía', 'Humor con picardía'] },
+    { q: '¿Qué final de cita elegiría?', options: ['Abrazo largo', 'Mensaje al llegar', 'Próxima invitación', 'Mirada incómoda bonita'] },
+    { q: '¿Qué le gusta que le digan?', options: ['Algo tierno', 'Algo gracioso', 'Algo directo', 'Algo insinuado'] },
+    { q: '¿Qué energía le atrae más?', options: ['Dulce', 'Segura', 'Misteriosa', 'Atrevida'] }
+  ]
+};
+
+function shuffleCopy(list) {
+  return [...list].sort(() => Math.random() - 0.5);
+}
+
+function collectPairNames() {
+  const a = document.getElementById('pairNameA')?.value.trim() || 'Persona 1';
+  const b = document.getElementById('pairNameB')?.value.trim() || 'Persona 2';
+  pairPlayers = [a, b];
+}
+
+function startPairGame() {
+  collectPairNames();
+  pairMode = document.querySelector('.pair-mode-option.active')?.dataset.pairMode || 'dulce';
+  activePairQuestions = shuffleCopy(pairQuestionSets[pairMode] || pairQuestionSets.dulce).slice(0, 8);
+  pairRoundIndex = 0;
+  pairPhase = 'guess';
+  pairGuesserIndex = 0;
+  pairGuess = null;
+  pairScore = 0;
+  pairRounds = [];
+  unlockAchievement('pair');
+  showScreen('pairGameScreen');
+  renderPairGame();
+}
+
+function renderPairGame() {
+  const question = activePairQuestions[pairRoundIndex];
+  const totalRounds = activePairQuestions.length;
+  const guesser = pairPlayers[pairGuesserIndex];
+  const target = pairPlayers[1 - pairGuesserIndex];
+  const pill = document.getElementById('pairPill');
+  const eyebrow = document.getElementById('pairEyebrow');
+  const title = document.getElementById('pairTitle');
+  const help = document.getElementById('pairHelp');
+  const grid = document.getElementById('pairOptions');
+  const feedback = document.getElementById('pairFeedback');
+  const stats = document.getElementById('pairStats');
+  if (!question || !pill || !eyebrow || !title || !help || !grid || !feedback || !stats) return;
+  pill.textContent = `Ronda ${pairRoundIndex + 1} de ${totalRounds}`;
+  eyebrow.textContent = pairPhase === 'guess' ? `Turno de ${guesser}` : `Respuesta real de ${target}`;
+  title.textContent = question.q;
+  help.innerHTML = pairPhase === 'guess'
+    ? `<strong>${guesser}</strong>, intenta adivinar qué respondería <strong>${target}</strong>. ${target} no debe mirar.`
+    : `<strong>${target}</strong>, ahora marca tu respuesta real. Luego veremos si ${guesser} acertó.`;
+  grid.innerHTML = question.options.map((option, index) => `<button class="likely-vote-btn pair-option-btn" data-index="${index}">${escapeHtml(option)}</button>`).join('');
+  grid.querySelectorAll('.pair-option-btn').forEach(button => button.addEventListener('click', () => choosePairOption(Number(button.dataset.index))));
+  feedback.innerHTML = pairPhase === 'guess' ? 'Primero va la predicción. Después se compara con la respuesta real.' : `Predicción guardada: <strong>${escapeHtml(question.options[pairGuess])}</strong>`;
+  stats.innerHTML = `<div><strong>Puntaje actual</strong><span>${pairScore}/${pairRoundIndex}</span></div><div><strong>Modo</strong><span>${pairModeLabel(pairMode)}</span></div>`;
+}
+
+function choosePairOption(index) {
+  const question = activePairQuestions[pairRoundIndex];
+  const guesser = pairPlayers[pairGuesserIndex];
+  const target = pairPlayers[1 - pairGuesserIndex];
+  if (pairPhase === 'guess') {
+    pairGuess = index;
+    pairPhase = 'real';
+    renderPairGame();
+    return;
+  }
+  const hit = pairGuess === index;
+  if (hit) pairScore += 1;
+  pairRounds.push({ question: question.q, guesser, target, guess: question.options[pairGuess], real: question.options[index], hit });
+  showPairRoundResult(hit);
+}
+
+function showPairRoundResult(hit) {
+  const feedback = document.getElementById('pairFeedback');
+  const grid = document.getElementById('pairOptions');
+  const question = activePairQuestions[pairRoundIndex];
+  const target = pairPlayers[1 - pairGuesserIndex];
+  if (!feedback || !grid || !question) return;
+  grid.innerHTML = '';
+  feedback.innerHTML = `<div class="pair-round-result ${hit ? 'hit' : 'miss'}"><strong>${hit ? 'Acertaron' : 'No coincidieron'}</strong><p>${target} respondió: ${escapeHtml(pairRounds[pairRounds.length - 1].real)}</p></div><button class="primary-button" id="nextPairRoundBtn">${pairRoundIndex + 1 >= activePairQuestions.length ? 'Ver resultado final' : 'Siguiente ronda'}</button>`;
+  document.getElementById('nextPairRoundBtn')?.addEventListener('click', nextPairRound);
+}
+
+function nextPairRound() {
+  pairRoundIndex += 1;
+  pairGuesserIndex = 1 - pairGuesserIndex;
+  pairPhase = 'guess';
+  pairGuess = null;
+  if (pairRoundIndex >= activePairQuestions.length) {
+    renderPairFinal();
+    return;
+  }
+  renderPairGame();
+}
+
+function pairModeLabel(mode) {
+  return { dulce: 'Dulce', profundo: 'Profundo', coqueta: 'Coqueta' }[mode] || 'Dulce';
+}
+
+function renderPairFinal() {
+  const totalRounds = activePairQuestions.length || 1;
+  const pct = Math.round((pairScore / totalRounds) * 100);
+  const title = document.getElementById('pairTitle');
+  const eyebrow = document.getElementById('pairEyebrow');
+  const help = document.getElementById('pairHelp');
+  const grid = document.getElementById('pairOptions');
+  const feedback = document.getElementById('pairFeedback');
+  const stats = document.getElementById('pairStats');
+  if (!title || !eyebrow || !help || !grid || !feedback || !stats) return;
+  eyebrow.textContent = 'Resultado de pareja';
+  title.textContent = `${pairPlayers[0]} + ${pairPlayers[1]}`;
+  help.innerHTML = `Puntaje final: <strong>${pairScore}/${totalRounds}</strong> · ${pct}% de conocimiento mutuo.`;
+  grid.innerHTML = '';
+  const label = pct >= 85 ? 'Se conocen demasiado' : pct >= 65 ? 'Muy buena conexión' : pct >= 45 ? 'Todavía hay misterio' : 'Match con tarea pendiente';
+  const text = pct >= 85
+    ? 'Hay detalles, gustos y señales que leen muy bien. Esto tiene vibra de complicidad real.'
+    : pct >= 65
+      ? 'Se conocen bastante, pero todavía quedan cosas entretenidas por descubrir.'
+      : pct >= 45
+        ? 'Hay conexión, pero también varias sorpresas. Eso puede hacerlo más interesante.'
+        : 'No acertaron tanto, pero al menos ya tienen temas para conversar y reírse.';
+  feedback.innerHTML = `<div class="pair-final-card"><strong>${label}</strong><p>${text}</p><button class="primary-button" id="restartPairBtn">Jugar otra vez</button><button class="secondary-button" id="sharePairBtn">Compartir resultado</button></div>`;
+  stats.innerHTML = pairRounds.map((round, index) => `<div><strong>${index + 1}. ${escapeHtml(round.target)}</strong><span>${round.hit ? '✓' : '×'} ${escapeHtml(round.real)}</span></div>`).join('');
+  document.getElementById('restartPairBtn')?.addEventListener('click', startPairGame);
+  document.getElementById('sharePairBtn')?.addEventListener('click', sharePairResult);
+}
+
+function sharePairResult() {
+  const totalRounds = activePairQuestions.length || 1;
+  const pct = Math.round((pairScore / totalRounds) * 100);
+  const text = `❤️ TeLoAdivino · Modo Parejas\n\n${pairPlayers[0]} + ${pairPlayers[1]}\n${pct}% · ${pairScore}/${totalRounds} aciertos\n\n¿Qué tanto se conocen? ✨`;
+  if (navigator.share) {
+    navigator.share({ text }).catch(() => copyText(text));
+  } else {
+    copyText(text);
+  }
+}
+
+
+const likelyQuestions = [
+  '¿Quién es más probable que se enamore primero?',
+  '¿Quién llegaría tarde a una cita importante?',
+  '¿Quién respondería un mensaje en 3 segundos?',
+  '¿Quién mandaría una indirecta por Instagram?',
+  '¿Quién sobreviviría mejor a un apocalipsis?',
+  '¿Quién sería influencer sin querer?',
+  '¿Quién se reiría en el peor momento?',
+  '¿Quién daría el primer paso si le gusta alguien?',
+  '¿Quién tendría una cita de película?',
+  '¿Quién se haría el/la interesante?',
+  '¿Quién guarda mejor un secreto?',
+  '¿Quién sería protagonista de una comedia romántica?',
+  '¿Quién tiene más vibra misteriosa?',
+  '¿Quién se pondría más nervioso/a con su crush?',
+  '¿Quién organizaría la mejor fiesta?',
+  '¿Quién terminaría dando el mejor consejo amoroso?',
+  '¿Quién tendría más posibilidades de volverse famoso/a?',
+  '¿Quién se acordaría de todos los detalles?',
+  '¿Quién diría “yo no fui” aunque sí fue?',
+  '¿Quién tendría el match más inesperado de la noche?'
+];
+
+function collectLikelyParticipantNames() {
+  const inputs = document.querySelectorAll('#likelyParticipantNames input');
+  likelyParticipantList = Array.from(inputs).map((input, index) => input.value.trim() || `Persona ${index + 1}`);
+}
+
+function renderLikelyParticipantNameInputs() {
+  const container = document.getElementById('likelyParticipantNames');
+  if (!container) return;
+  const previous = likelyParticipantList || [];
+  container.innerHTML = Array.from({ length: likelyParticipantCount }, (_, index) => {
+    const value = previous[index] || `Persona ${index + 1}`;
+    return `<label>Persona ${index + 1}<input type="text" value="${escapeHtml(value)}" placeholder="Nombre"></label>`;
+  }).join('');
+}
+
+function applyLikelyParticipantCount() {
+  collectLikelyParticipantNames();
+  const input = document.getElementById('likelyParticipantCountInput');
+  const value = Math.max(3, Math.min(30, Number(input?.value || 3)));
+  likelyParticipantCount = value;
+  if (input) input.value = value;
+  renderLikelyParticipantNameInputs();
+}
+
+function startLikelyGame() {
+  unlockAchievement('likely');
+  collectLikelyParticipantNames();
+  likelyParticipantList = likelyParticipantList.filter(Boolean);
+  if (likelyParticipantList.length < 3) {
+    alert('Necesitas al menos 3 participantes para este juego.');
+    return;
+  }
+  likelyQuestionIndex = Math.floor(Math.random() * likelyQuestions.length);
+  likelyRounds = [];
+  likelyStats = {};
+  likelyParticipantList.forEach(name => likelyStats[name] = 0);
+  showScreen('likelyGameScreen');
+  renderLikelyQuestion();
+}
+
+function renderLikelyQuestion() {
+  const questionEl = document.getElementById('likelyQuestion');
+  const grid = document.getElementById('likelyVoteGrid');
+  const results = document.getElementById('likelyResults');
+  if (!questionEl || !grid || !results) return;
+  const question = likelyQuestions[likelyQuestionIndex % likelyQuestions.length];
+  questionEl.textContent = question;
+  grid.innerHTML = likelyParticipantList.map(name => `<button class="likely-vote-btn" data-name="${escapeHtml(name)}">${escapeHtml(name)}</button>`).join('');
+  grid.querySelectorAll('.likely-vote-btn').forEach(button => {
+    button.addEventListener('click', () => voteLikely(button.dataset.name));
+  });
+  renderLikelyResults();
+}
+
+function voteLikely(name) {
+  if (!name) return;
+  likelyStats[name] = (likelyStats[name] || 0) + 1;
+  const currentRound = likelyRounds[0];
+  const question = likelyQuestions[likelyQuestionIndex % likelyQuestions.length];
+  if (!currentRound || currentRound.question !== question) {
+    likelyRounds.unshift({ question, votes: { [name]: 1 } });
+  } else {
+    currentRound.votes[name] = (currentRound.votes[name] || 0) + 1;
+  }
+  renderLikelyResults();
+}
+
+function nextLikelyQuestion() {
+  likelyQuestionIndex = (likelyQuestionIndex + 1 + Math.floor(Math.random() * 4)) % likelyQuestions.length;
+  renderLikelyQuestion();
+}
+
+function renderLikelyResults() {
+  const results = document.getElementById('likelyResults');
+  const statsEl = document.getElementById('likelyStats');
+  if (!results || !statsEl) return;
+  const question = likelyQuestions[likelyQuestionIndex % likelyQuestions.length];
+  const current = likelyRounds.find(round => round.question === question);
+  const roundVotes = current?.votes || {};
+  const roundEntries = Object.entries(roundVotes).sort((a,b) => b[1] - a[1]);
+  const totalRoundVotes = roundEntries.reduce((sum, [,votes]) => sum + votes, 0);
+  if (!roundEntries.length) {
+    results.innerHTML = '<div class="online-wait-card"><strong>Aún no hay votos en esta ronda.</strong><span>Presiona el nombre de una persona para votar.</span></div>';
+  } else {
+    results.innerHTML = `<h3>Resultado de la ronda</h3>${roundEntries.map(([name, votes]) => {
+      const pct = totalRoundVotes ? Math.round((votes / totalRoundVotes) * 100) : 0;
+      return `<div class="likely-bar"><strong>${escapeHtml(name)}</strong><span><i style="width:${pct}%"></i></span><em>${votes} voto${votes === 1 ? '' : 's'}</em></div>`;
+    }).join('')}`;
+  }
+  const globalEntries = Object.entries(likelyStats).sort((a,b) => b[1] - a[1]).slice(0, 8);
+  statsEl.innerHTML = globalEntries.length ? `<h3>Ranking de la noche</h3>${globalEntries.map(([name, votes], index) => `<div><strong>${index + 1}. ${escapeHtml(name)}</strong><span>${votes} voto${votes === 1 ? '' : 's'} acumulado${votes === 1 ? '' : 's'}</span></div>`).join('')}` : '';
+}
+
+function shareLikelyRanking() {
+  unlockAchievement('share');
+  const entries = Object.entries(likelyStats).sort((a,b) => b[1] - a[1]);
+  if (!entries.length || entries.every(([,votes]) => votes === 0)) {
+    alert('Aún no hay votos para compartir.');
+    return;
+  }
+  const text = `🏆 TeLoAdivino · ¿Quién es más probable?\n\nRanking de la noche:\n${entries.slice(0, 10).map(([name, votes], index) => `${index + 1}. ${name} — ${votes} voto${votes === 1 ? '' : 's'}`).join('\n')}\n\nJuega en TeLoAdivino ✨`;
+  lastShareText = text;
+  if (navigator.share) {
+    navigator.share({ text }).catch(() => {});
+  } else {
+    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+  }
+}
+
+const truthCards = {
+  suave: {
+    verdad: [
+      '¿Cuál fue tu momento más vergonzoso esta semana?',
+      '¿Qué canción te da vergüenza admitir que te gusta?',
+      '¿Cuál es una manía tuya?',
+      '¿Qué cosa simple te pone de buen humor?',
+      '¿Qué app usas más de lo que deberías?',
+      '¿Cuál fue la última mentira piadosa que dijiste?'
+    ],
+    reto: [
+      'Haz una pose dramática por 5 segundos.',
+      'Imita a alguien famoso.',
+      'Di una frase como si estuvieras en una teleserie.',
+      'Haz un cumplido sincero a alguien del grupo.',
+      'Habla con voz de narrador hasta tu próximo turno.',
+      'El grupo te pone un apodo por una ronda.'
+    ]
+  },
+  fiesta: {
+    verdad: [
+      '¿Quién del grupo sería peor guardando un secreto?',
+      '¿Quién sobreviviría mejor en un reality?',
+      '¿Qué plan jamás rechazarías?',
+      '¿Quién del grupo tiene más energía de protagonista?',
+      '¿Cuál fue tu peor excusa para no salir?',
+      '¿Quién del grupo sería más famoso en TikTok?'
+    ],
+    reto: [
+      'Habla con acento falso hasta tu próximo turno.',
+      'Elige a alguien y hagan una pose de portada de disco.',
+      'Cuenta una historia inventada y que el grupo adivine si es falsa.',
+      'Haz una mini escena de teleserie de 10 segundos.',
+      'Inventa un apodo para la persona de tu derecha.',
+      'Haz una celebración exagerada como si ganaras un premio.'
+    ]
+  },
+  coqueta: {
+    verdad: [
+      '¿Qué te parece más atractivo en alguien?',
+      '¿Cuál es tu forma favorita de coquetear?',
+      '¿Qué indirecta usarías si te gusta alguien?',
+      '¿Qué cita ideal elegirías?',
+      '¿Qué señal te hace pensar que hay onda?',
+      '¿Qué mensaje coqueto te gustaría recibir?'
+    ],
+    reto: [
+      'Dile una green flag a alguien del grupo.',
+      'Mantén la mirada con alguien por 5 segundos.',
+      'Dedica una canción a alguien del grupo.',
+      'Di una frase coqueta sin reírte.',
+      'Elige a alguien y dile qué vibra tiene.',
+      'Dile un cumplido sutil a la persona que elijas.'
+    ]
+  },
+  atrevida: {
+    verdad: [
+      '¿Qué tipo de tensión te gusta más?',
+      '¿Qué gesto te parece más seductor?',
+      '¿Qué ambiente te parece más atractivo?',
+      '¿Qué frase te dejaría pensando?',
+      '¿Qué te parece más irresistible: confianza, humor, misterio o cercanía?',
+      '¿Qué plan tiene más vibra atrevida para ti?'
+    ],
+    reto: [
+      'Di algo atractivo de una persona del grupo, sin hacerlo incómodo.',
+      'Haz contacto visual con alguien por 7 segundos.',
+      'Susurra una frase misteriosa sin decir nada explícito.',
+      'Elige a alguien y dile: “tienes una vibra interesante”.',
+      'Dile a alguien qué energía transmite en una palabra.',
+      'Elige a alguien y hagan una mirada de película por 5 segundos.'
+    ]
+  }
+};
+
+function collectTruthParticipantNames() {
+  const inputs = document.querySelectorAll('#truthParticipantNames input');
+  truthParticipantList = Array.from(inputs).map((input, index) => input.value.trim() || `Persona ${index + 1}`);
+}
+
+function renderTruthParticipantNameInputs() {
+  const container = document.getElementById('truthParticipantNames');
+  if (!container) return;
+  const previous = truthParticipantList || [];
+  container.innerHTML = Array.from({ length: truthParticipantCount }, (_, index) => {
+    const value = previous[index] || `Persona ${index + 1}`;
+    return `<label class="name-field"><span>Persona ${index + 1}</span><input type="text" maxlength="22" value="${value}"></label>`;
+  }).join('');
+}
+
+function updateTruthStats(round = null) {
+  if (round?.player) {
+    const current = truthStats[round.player] || { total: 0, verdad: 0, reto: 0 };
+    current.total += 1;
+    current[round.card.kind] = (current[round.card.kind] || 0) + 1;
+    truthStats[round.player] = current;
+  }
+  const statsEl = document.getElementById('truthStats');
+  if (!statsEl) return;
+  const entries = Object.entries(truthStats).sort((a,b) => b[1].total - a[1].total).slice(0, 6);
+  statsEl.innerHTML = entries.length ? `<strong>Estadísticas de la noche</strong>${entries.map(([name, stat]) => `<span>${escapeHtml(name)}: ${stat.total} turno(s), ${stat.verdad || 0} verdad(es), ${stat.reto || 0} reto(s)</span>`).join('')}` : '';
+}
+
+function getTruthCard(kind, intensity = selectedTruthIntensity) {
+  const set = truthCards[intensity] || truthCards.suave;
+  const finalKind = kind === 'random' ? (Math.random() > 0.5 ? 'verdad' : 'reto') : kind;
+  const list = set[finalKind] || set.verdad;
+  return { kind: finalKind, text: randomItem(list) };
+}
+
+function startTruthGame() {
+  unlockAchievement('truth');
+  collectTruthParticipantNames();
+  truthRounds = [];
+  truthStats = {};
+  selectedTruthIntensity = document.querySelector('.truth-intensity-option.active')?.dataset.truthIntensity || 'suave';
+  showScreen('truthGameScreen');
+  renderTruthRound(null);
+}
+
+function playTruthTurn(kind = 'random') {
+  collectTruthParticipantNames();
+  const player = randomItem(truthParticipantList.filter(Boolean));
+  const card = getTruthCard(kind);
+  const round = { player, card, intensity: selectedTruthIntensity, createdAt: Date.now() };
+  truthRounds.unshift(round);
+  updateTruthStats(round);
+  renderTruthRound(round);
+}
+
+function renderTruthRound(round) {
+  const visual = document.getElementById('truthVisual');
+  const pill = document.getElementById('truthPill');
+  const eyebrow = document.getElementById('truthEyebrow');
+  const title = document.getElementById('truthTitle');
+  const playerEl = document.getElementById('truthPlayer');
+  const challengeEl = document.getElementById('truthChallenge');
+  const log = document.getElementById('truthLog');
+  if (!visual || !pill || !eyebrow || !title || !playerEl || !challengeEl || !log) return;
+  pill.textContent = `Verdad o Reto · ${selectedTruthIntensity}`;
+  if (!round) {
+    eyebrow.textContent = 'Turno aleatorio';
+    title.textContent = '¿Quién juega?';
+    playerEl.textContent = 'Presiona Verdad, Reto o Aleatorio para seleccionar a alguien.';
+    challengeEl.textContent = 'La app elegirá una persona y mostrará una verdad o un reto según el botón elegido.';
+    log.innerHTML = '';
+    updateBottleStats();
+    renderBottleWheel(bottleParticipantList, null, false);
+    return;
+  }
+  visual.classList.remove('spin');
+  void visual.offsetWidth;
+  visual.classList.add('spin');
+  const label = round.card.kind === 'verdad' ? 'Verdad' : 'Reto';
+  eyebrow.textContent = label;
+  title.textContent = `Turno de ${round.player}`;
+  playerEl.innerHTML = `<strong>${round.player}</strong>`;
+  challengeEl.innerHTML = `<strong>🃏 ${label}</strong><p>${round.card.text}</p><small>Siempre se puede pasar o pedir otra carta si alguien no se siente cómodo.</small>`;
+  log.innerHTML = truthRounds.slice(0, 6).map((item, index) => `<div><strong>${index + 1}. ${item.player}</strong><small>${item.card.kind === 'verdad' ? 'Verdad' : 'Reto'}</small></div>`).join('');
+}
+
+function getOnlineTruthConfig() {
+  return { intensity: document.getElementById('onlineBottleIntensitySelect')?.value || 'suave' };
+}
+
+async function startOnlineTruthGame() {
+  if (!firebaseOnline || !currentRoom?.code) {
+    alert('Firebase no está conectado. Recarga la página e intenta nuevamente.');
+    return;
+  }
+  const activeParticipants = getActiveOnlineParticipants();
+  if (activeParticipants.length < 2) {
+    alert('Necesitas al menos 2 participantes conectados desde sus celulares.');
+    return;
+  }
+  const ownId = getParticipantId();
+  if (currentRoom.hostId && currentRoom.hostId !== ownId) {
+    alert('Solo la persona anfitriona puede iniciar Verdad o Reto.');
+    return;
+  }
+  const config = getOnlineTruthConfig();
+  lastRenderedTruthRoundKey = '';
+  try {
+    await getRoomRef(currentRoom.code).update({
+      status: 'playing',
+      updatedAt: Date.now(),
+      game: { type: 'truth', intensity: config.intensity, startedAt: Date.now(), rounds: [] }
+    });
+  } catch (error) {
+    console.warn('No se pudo iniciar Verdad o Reto:', error);
+    alert('No se pudo iniciar Verdad o Reto. Revisa la conexión o las reglas de Firebase.');
+  }
+}
+
+function renderOnlineTruth(force = false) {
+  const game = currentRoom?.game;
+  if (!game || game.type !== 'truth') return;
+  const options = document.getElementById('onlineGameOptions');
+  const dots = document.getElementById('onlineGameProgressDots');
+  const pill = document.getElementById('onlineGamePill');
+  const eyebrow = document.getElementById('onlineGameEyebrow');
+  const title = document.getElementById('onlineGameTitle');
+  const help = document.getElementById('onlineGameHelp');
+  if (!options || !dots || !pill || !eyebrow || !title || !help) return;
+  const rounds = Array.isArray(game.rounds) ? game.rounds : [];
+  const latest = rounds[rounds.length - 1] || null;
+  const ownId = getParticipantId();
+  const isHost = !currentRoom?.hostId || currentRoom.hostId === ownId;
+  const key = `${currentRoom.code}:${game.startedAt}:${latest?.createdAt || 'empty'}:${rounds.length}`;
+  if (!force && lastRenderedTruthRoundKey === key && document.getElementById('onlineGameScreen')?.classList.contains('active')) return;
+  lastRenderedTruthRoundKey = key;
+  showScreen('onlineGameScreen');
+  updateOnlineGameActions();
+  pill.textContent = `Verdad o Reto · ${currentRoom.code}`;
+  eyebrow.textContent = latest ? (latest.card.kind === 'verdad' ? 'Verdad' : 'Reto') : `Modo ${game.intensity || 'suave'}`;
+  title.textContent = latest ? `Turno de ${latest.player.name}` : 'Esperando turno';
+  help.textContent = 'El anfitrión puede elegir Verdad, Reto o Aleatorio. Todas las personas verán la carta.';
+  const latestHtml = latest ? `<div class="bottle-pair online"><strong>${latest.player.name}</strong></div><div class="bottle-card"><strong>${latest.card.kind === 'verdad' ? 'Verdad' : 'Reto'}</strong><p>${latest.card.text}</p><small>Siempre se puede pasar o pedir otra carta si alguien no se siente cómodo.</small></div>` : '<div class="online-wait-card"><strong>El anfitrión debe iniciar el primer turno.</strong></div>';
+  const actions = isHost ? `<button class="primary-button" id="onlineTruthTruthBtn">Verdad</button><button class="primary-button" id="onlineTruthDareBtn">Reto</button><button class="secondary-button" id="onlineTruthRandomBtn">Aleatorio</button>` : '<div class="online-wait-card"><strong>Espera a que el anfitrión saque una carta.</strong></div>';
+  const logHtml = rounds.length ? `<div class="bottle-log">${rounds.slice(-6).reverse().map((round, index) => `<div><strong>${index + 1}. ${round.player.name}</strong><small>${round.card.kind === 'verdad' ? 'Verdad' : 'Reto'}</small></div>`).join('')}</div>` : '';
+  options.innerHTML = `${latestHtml}<div class="bottle-actions">${actions}</div>${logHtml}`;
+  dots.innerHTML = '';
+  document.getElementById('onlineTruthTruthBtn')?.addEventListener('click', () => playOnlineTruthTurn('verdad'));
+  document.getElementById('onlineTruthDareBtn')?.addEventListener('click', () => playOnlineTruthTurn('reto'));
+  document.getElementById('onlineTruthRandomBtn')?.addEventListener('click', () => playOnlineTruthTurn('random'));
+}
+
+async function playOnlineTruthTurn(kind = 'random') {
+  if (!firebaseOnline || !currentRoom?.code || currentRoom.game?.type !== 'truth') return;
+  const activeParticipants = getActiveOnlineParticipants();
+  const selected = randomItem(activeParticipants);
+  if (!selected) return;
+  const card = getTruthCard(kind, currentRoom.game.intensity || 'suave');
+  const round = { player: { id: selected.id, name: selected.name }, card, intensity: currentRoom.game.intensity || 'suave', createdAt: Date.now() };
+  const currentRounds = Array.isArray(currentRoom.game.rounds) ? [...currentRoom.game.rounds] : [];
+  currentRounds.push(round);
+  try {
+    await getRoomRef(currentRoom.code).child('game/rounds').set(currentRounds.slice(-50));
+  } catch (error) {
+    console.warn('No se pudo jugar turno de Verdad o Reto:', error);
+    alert('No se pudo sacar la carta. Revisa la conexión.');
+  }
+}
+
 function copyText(value) {
   if (!value) return;
   if (navigator.clipboard?.writeText) {
@@ -1920,7 +3187,12 @@ function resetCurrentGame() { startSelectedMode(); }
 document.getElementById('backModesFromOnlineBtn')?.addEventListener('click', openModes);
 document.getElementById('backOnlineFromLobbyBtn')?.addEventListener('click', openOnlineRoom);
 document.getElementById('resetOnlineRoomBtn')?.addEventListener('click', clearCurrentRoom);
-document.getElementById('clearRoomBtn')?.addEventListener('click', clearCurrentRoom);
+document.getElementById('clearRoomBtn')?.addEventListener('click', leaveCurrentRoom);
+document.getElementById('leaveRoomBtn')?.addEventListener('click', leaveCurrentRoom);
+document.getElementById('finishRoomBtn')?.addEventListener('click', finishCurrentRoom);
+document.getElementById('backToLobbyBtn')?.addEventListener('click', returnRoomToLobby);
+document.getElementById('onlineFinishRoomBtn')?.addEventListener('click', finishCurrentRoom);
+document.getElementById('onlineBackToLobbyBtn')?.addEventListener('click', returnRoomToLobby);
 document.getElementById('createRoomTab')?.addEventListener('click', () => setOnlineTab('create'));
 document.getElementById('joinRoomTab')?.addEventListener('click', () => setOnlineTab('join'));
 document.getElementById('createRoomBtn')?.addEventListener('click', createRoom);
@@ -1947,8 +3219,12 @@ document.querySelectorAll('.picker-option').forEach(button => {
     compatParticipantCount = Number(button.dataset.count);
     document.querySelectorAll('.picker-option').forEach(item => item.classList.remove('active'));
     button.classList.add('active');
-    renderParticipantNameInputs();
+    initTheme();
+renderParticipantNameInputs();
 renderVibeParticipantNameInputs();
+renderBottleParticipantNameInputs();
+renderTruthParticipantNameInputs();
+renderLikelyParticipantNameInputs();
 if (new URLSearchParams(window.location.search).has('room')) { openOnlineRoom(); }
   });
 });
@@ -1989,12 +3265,120 @@ document.getElementById('changeModeBtn').addEventListener('click', openModes);
 document.getElementById('backFromExplainBtn').addEventListener('click', backFromExplanation);
 document.getElementById('explainPlayBtn').addEventListener('click', openModes);
 
+// v6.0 · barra inferior
+// Mantiene la navegación principal siempre accesible sin alterar la lógica existente.
+document.getElementById('navHomeBtn')?.addEventListener('click', () => showScreen('homeScreen'));
+document.getElementById('navGamesBtn')?.addEventListener('click', openModes);
+document.getElementById('navOnlineBtn')?.addEventListener('click', openOnlineRoom);
+document.getElementById('navAchievementsBtn')?.addEventListener('click', openAchievements);
+
+
+document.getElementById('backIntroFromBottleSetupBtn')?.addEventListener('click', () => showScreen('introScreen'));
+document.getElementById('startBottleBtn')?.addEventListener('click', startBottleGame);
+document.getElementById('backModesFromBottleBtn')?.addEventListener('click', openModes);
+document.getElementById('resetBottleBtn')?.addEventListener('click', () => { bottleRounds = []; renderBottleRound(null); });
+document.getElementById('spinBottleBtn')?.addEventListener('click', () => spinLocalBottle(false));
+document.getElementById('bottlePassBtn')?.addEventListener('click', () => spinLocalBottle(true));
+document.getElementById('startOnlineBottleBtn')?.addEventListener('click', startOnlineBottleGame);
+document.getElementById('startOnlineTruthBtn')?.addEventListener('click', startOnlineTruthGame);
+document.getElementById('applyCompatCountBtn')?.addEventListener('click', applyCompatParticipantCount);
+document.getElementById('compatParticipantCountInput')?.addEventListener('change', applyCompatParticipantCount);
+document.getElementById('applyVibeCountBtn')?.addEventListener('click', applyVibeParticipantCount);
+document.getElementById('vibeParticipantCountInput')?.addEventListener('change', applyVibeParticipantCount);
+document.getElementById('applyBottleCountBtn')?.addEventListener('click', applyBottleParticipantCount);
+document.getElementById('bottleParticipantCountInput')?.addEventListener('change', applyBottleParticipantCount);
+document.getElementById('applyTruthCountBtn')?.addEventListener('click', applyTruthParticipantCount);
+document.getElementById('truthParticipantCountInput')?.addEventListener('change', applyTruthParticipantCount);
+document.getElementById('applyLikelyCountBtn')?.addEventListener('click', applyLikelyParticipantCount);
+document.getElementById('likelyParticipantCountInput')?.addEventListener('change', applyLikelyParticipantCount);
+document.getElementById('startPairBtn')?.addEventListener('click', startPairGame);
+document.getElementById('backIntroFromPairSetupBtn')?.addEventListener('click', () => showScreen('introScreen'));
+document.getElementById('backModesFromPairBtn')?.addEventListener('click', openModes);
+document.getElementById('resetPairBtn')?.addEventListener('click', startPairGame);
+
+document.querySelectorAll('.bottle-picker-option').forEach(button => {
+  button.addEventListener('click', () => {
+    collectBottleParticipantNames();
+    bottleParticipantCount = Number(button.dataset.count);
+    document.querySelectorAll('.bottle-picker-option').forEach(item => item.classList.remove('active'));
+    button.classList.add('active');
+    renderBottleParticipantNameInputs();
+renderTruthParticipantNameInputs();
+  });
+});
+document.querySelectorAll('.bottle-intensity-option').forEach(button => {
+  button.addEventListener('click', () => {
+    selectedBottleIntensity = button.dataset.bottleIntensity;
+    document.querySelectorAll('.bottle-intensity-option').forEach(item => item.classList.remove('active'));
+    button.classList.add('active');
+  });
+});
+
+document.getElementById('backIntroFromTruthSetupBtn')?.addEventListener('click', () => showScreen('introScreen'));
+document.getElementById('startTruthBtn')?.addEventListener('click', startTruthGame);
+document.getElementById('backModesFromTruthBtn')?.addEventListener('click', openModes);
+document.getElementById('resetTruthBtn')?.addEventListener('click', () => { truthRounds = []; renderTruthRound(null); });
+document.getElementById('truthTruthBtn')?.addEventListener('click', () => playTruthTurn('verdad'));
+document.getElementById('truthDareBtn')?.addEventListener('click', () => playTruthTurn('reto'));
+document.getElementById('truthRandomBtn')?.addEventListener('click', () => playTruthTurn('random'));
+document.querySelectorAll('.truth-picker-option').forEach(button => {
+  button.addEventListener('click', () => {
+    collectTruthParticipantNames();
+    truthParticipantCount = Number(button.dataset.count);
+    document.querySelectorAll('.truth-picker-option').forEach(item => item.classList.remove('active'));
+    button.classList.add('active');
+    renderTruthParticipantNameInputs();
+  });
+});
+document.querySelectorAll('.truth-intensity-option').forEach(button => {
+  button.addEventListener('click', () => {
+    selectedTruthIntensity = button.dataset.truthIntensity;
+    document.querySelectorAll('.truth-intensity-option').forEach(item => item.classList.remove('active'));
+    button.classList.add('active');
+  });
+});
+
+document.getElementById('backIntroFromLikelySetupBtn')?.addEventListener('click', () => showScreen('introScreen'));
+document.getElementById('startLikelyBtn')?.addEventListener('click', startLikelyGame);
+document.getElementById('backModesFromLikelyBtn')?.addEventListener('click', openModes);
+document.getElementById('resetLikelyBtn')?.addEventListener('click', startLikelyGame);
+document.getElementById('nextLikelyQuestionBtn')?.addEventListener('click', nextLikelyQuestion);
+document.getElementById('shareLikelyBtn')?.addEventListener('click', shareLikelyRanking);
+
+
+
+document.querySelectorAll('.pair-mode-option').forEach(button => {
+  button.addEventListener('click', () => {
+    document.querySelectorAll('.pair-mode-option').forEach(btn => btn.classList.remove('active'));
+    button.classList.add('active');
+  });
+});
+
+document.getElementById('achievementsBtn')?.addEventListener('click', openAchievements);
+document.getElementById('backFromAchievementsBtn')?.addEventListener('click', openModes);
+document.getElementById('clearAchievementsBtn')?.addEventListener('click', () => {
+  if (confirm('¿Reiniciar todos los logros de este navegador?')) {
+    localStorage.removeItem(ACHIEVEMENTS_KEY);
+    renderAchievements();
+  }
+});
+document.querySelectorAll('.theme-chip').forEach(button => {
+  button.addEventListener('click', () => {
+    applyTheme(button.dataset.theme);
+    unlockAchievement('theme');
+  });
+});
+
 document.querySelectorAll('.mode-card').forEach(button => {
   button.addEventListener('click', () => prepareMode(button.dataset.mode));
 });
 
+initTheme();
 renderParticipantNameInputs();
 renderVibeParticipantNameInputs();
+renderBottleParticipantNameInputs();
+renderTruthParticipantNameInputs();
+renderLikelyParticipantNameInputs();
 if (new URLSearchParams(window.location.search).has('room')) { openOnlineRoom(); }
 
 if ('serviceWorker' in navigator) {

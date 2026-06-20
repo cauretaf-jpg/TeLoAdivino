@@ -364,3 +364,1044 @@ h1 span { color: #db2777; }
 .online-answer-list { display: grid; gap: 8px; }
 .online-answer-list div { display: flex; justify-content: space-between; gap: 10px; padding: 10px 12px; border-radius: 14px; background: rgba(252,231,243,.65); color: var(--primary-dark); font-weight: 800; }
 .online-answer-list small { color: var(--muted); font-weight: 800; }
+
+
+.toggle-row { display: flex; gap: 10px; align-items: flex-start; font-size: 14px; color: var(--text); line-height: 1.35; }
+.toggle-row input { margin-top: 3px; accent-color: #be185d; }
+.consent-box { background: rgba(255,255,255,.66); border: 1px solid rgba(190,24,93,.14); border-radius: 18px; padding: 14px; }
+.consent-box small { color: var(--muted); line-height: 1.35; }
+.online-divider { text-align: center; color: var(--muted); font-weight: 800; font-size: 12px; text-transform: uppercase; letter-spacing: .14em; }
+.bottle-panel { text-align: center; gap: 14px; }
+.bottle-visual { font-size: 64px; filter: drop-shadow(0 14px 24px rgba(190,24,93,.25)); transform: rotate(-16deg); transition: transform .35s ease; }
+.bottle-visual.spin { animation: bottleSpin .8s ease both; }
+@keyframes bottleSpin { 0% { transform: rotate(-16deg) scale(1); } 45% { transform: rotate(760deg) scale(1.08); } 100% { transform: rotate(16deg) scale(1); } }
+.bottle-pair { display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap; padding: 14px; border-radius: 22px; background: rgba(255,255,255,.78); border: 1px solid rgba(190,24,93,.14); color: var(--muted); }
+.bottle-pair strong { color: var(--primary-dark); font-size: 20px; }
+.bottle-pair span { color: #be185d; font-weight: 900; }
+.bottle-card { padding: 16px; border-radius: 22px; background: linear-gradient(135deg, rgba(255,255,255,.92), rgba(255,241,247,.92)); border: 1px solid rgba(190,24,93,.16); box-shadow: var(--soft-shadow); text-align: left; color: var(--text); }
+.bottle-card strong { color: var(--primary-dark); display: block; margin-bottom: 6px; }
+.bottle-card p { margin: 0; color: var(--muted); line-height: 1.45; }
+.bottle-actions { display: grid; gap: 10px; margin-top: 4px; }
+.bottle-log { display: grid; gap: 8px; margin-top: 8px; text-align: left; }
+.bottle-log div { display: flex; justify-content: space-between; gap: 10px; padding: 10px 12px; border-radius: 16px; background: rgba(255,255,255,.64); border: 1px solid rgba(190,24,93,.10); }
+.bottle-log small { color: var(--muted); }
+.bottle-pair.online { margin-bottom: 12px; }
+
+/* v4.5 salas robustas */
+.room-status-strip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: .75rem;
+  flex-wrap: wrap;
+  margin: .35rem 0 1rem;
+}
+.room-status-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  padding: .35rem .8rem;
+  font-weight: 800;
+  background: rgba(133, 92, 255, .13);
+  color: #5b35c8;
+  border: 1px solid rgba(133, 92, 255, .18);
+}
+.room-status-badge[data-status="playing"] {
+  background: rgba(255, 151, 85, .16);
+  color: #a74d12;
+  border-color: rgba(255, 151, 85, .25);
+}
+.room-status-badge[data-status="finished"] {
+  background: rgba(60, 60, 75, .12);
+  color: #55515f;
+  border-color: rgba(60, 60, 75, .18);
+}
+.room-management-actions {
+  display: flex;
+  gap: .65rem;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin: 1rem 0 .4rem;
+}
+.online-game-actions { margin-top: .8rem; }
+.danger-soft {
+  border-color: rgba(217, 74, 96, .24) !important;
+  color: #b03651 !important;
+  background: rgba(217, 74, 96, .08) !important;
+}
+.hidden { display: none !important; }
+
+/* v4.8: ruleta real y participantes por cantidad escrita */
+.count-input-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: center; }
+.count-input-row input { width: 100%; border: 1px solid rgba(190,24,93,.18); border-radius: 16px; padding: 13px 14px; font-weight: 800; font-size: 1rem; color: var(--text); background: rgba(255,255,255,.9); outline: none; }
+.count-input-row input:focus { border-color: rgba(190,24,93,.45); box-shadow: 0 0 0 4px rgba(244,114,182,.14); }
+.secondary-button.compact { min-height: 46px; padding: 0 16px; }
+.field-help { display: block; margin-top: 8px; color: var(--muted); line-height: 1.35; }
+.roulette-stage { position: relative; width: min(82vw, 330px); height: min(82vw, 330px); margin: 0 auto 12px; display: grid; place-items: center; font-size: initial; transform: none; filter: none; }
+.roulette-pointer { position: absolute; top: -4px; left: 50%; transform: translateX(-50%); z-index: 3; font-size: 34px; color: #be185d; text-shadow: 0 8px 16px rgba(190,24,93,.22); }
+.roulette-wheel-wrap { width: 100%; height: 100%; display: grid; place-items: center; transition: transform 2.4s cubic-bezier(.16,.84,.24,1); filter: drop-shadow(0 18px 28px rgba(190,24,93,.2)); }
+.roulette-wheel { width: 100%; height: 100%; border-radius: 50%; overflow: visible; }
+.roulette-wheel text { font-size: 10px; font-weight: 900; fill: #4a044e; paint-order: stroke; stroke: rgba(255,255,255,.74); stroke-width: 3px; stroke-linejoin: round; }
+.roulette-wheel .wheel-center { font-size: 22px; stroke: none; }
+.empty-wheel { width: 210px; height: 210px; border-radius: 999px; display: grid; place-items: center; background: rgba(255,255,255,.75); border: 1px dashed rgba(190,24,93,.3); color: var(--muted); font-weight: 800; }
+.night-stats { margin-top: 12px; display: grid; gap: 6px; text-align: left; color: var(--muted); }
+.night-stats strong { color: var(--primary-dark); }
+.night-stats span { display: block; padding: 8px 10px; border-radius: 14px; background: rgba(255,255,255,.62); border: 1px solid rgba(190,24,93,.09); }
+@media (max-width: 520px) {
+  .count-input-row { grid-template-columns: 1fr; }
+  .roulette-stage { width: min(86vw, 280px); height: min(86vw, 280px); }
+  .roulette-wheel text { font-size: 8px; }
+}
+
+/* v5.0: ¿Quién es más probable? */
+.likely-panel .intro-icon { margin-inline: auto; }
+.likely-vote-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; width: 100%; }
+.likely-vote-btn { border: 1px solid rgba(190,24,93,.16); border-radius: 18px; padding: 14px 12px; background: rgba(255,255,255,.82); color: var(--primary-dark); font-weight: 950; cursor: pointer; box-shadow: 0 10px 22px rgba(62,27,52,.06); transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease; }
+.likely-vote-btn:active { transform: scale(.97); }
+.likely-vote-btn:hover { border-color: rgba(190,24,93,.36); box-shadow: 0 14px 26px rgba(190,24,93,.12); }
+.likely-results { display: grid; gap: 10px; width: 100%; text-align: left; margin-top: 8px; }
+.likely-results h3, .night-stats h3 { margin: 0 0 4px; color: var(--primary-dark); font-size: 17px; }
+.likely-bar { display: grid; grid-template-columns: minmax(90px, .8fr) minmax(100px, 1fr) auto; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 16px; background: rgba(255,255,255,.72); border: 1px solid rgba(190,24,93,.10); }
+.likely-bar strong { color: var(--primary-dark); }
+.likely-bar span { height: 10px; border-radius: 999px; background: rgba(190,24,93,.12); overflow: hidden; }
+.likely-bar i { display: block; height: 100%; border-radius: 999px; background: linear-gradient(90deg, #f472b6, #c0266f); }
+.likely-bar em { font-style: normal; color: var(--muted); font-weight: 850; font-size: 13px; text-align: right; }
+@media (max-width: 520px) {
+  .likely-bar { grid-template-columns: 1fr; }
+  .likely-bar em { text-align: left; }
+}
+
+/* v5.1: temas visuales y logros */
+.mode-actions-row { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 12px; }
+.utility-section { margin-top: 18px; }
+.theme-picker { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+.theme-chip { border: 1px solid rgba(190,24,93,.16); border-radius: 999px; padding: 10px 13px; background: rgba(255,255,255,.72); color: var(--primary-dark); font-weight: 900; cursor: pointer; box-shadow: 0 8px 18px rgba(62,27,52,.05); }
+.theme-chip.active { background: linear-gradient(135deg, var(--primary), var(--primary-dark)); color: #fff; border-color: transparent; }
+.achievements-list { display: grid; gap: 10px; margin-top: 16px; }
+.achievement-card { display: grid; grid-template-columns: 46px 1fr; gap: 10px; align-items: center; padding: 12px; border-radius: 18px; border: 1px solid rgba(190,24,93,.10); background: rgba(255,255,255,.7); text-align: left; }
+.achievement-card > span { width: 46px; height: 46px; display: grid; place-items: center; border-radius: 15px; background: rgba(190,24,93,.10); font-size: 23px; }
+.achievement-card strong { display: block; color: var(--primary-dark); }
+.achievement-card small { display: block; color: var(--muted); line-height: 1.35; }
+.achievement-card em { display: inline-block; margin-top: 4px; font-style: normal; font-size: 12px; font-weight: 850; color: var(--muted); }
+.achievement-card.locked { filter: grayscale(.8); opacity: .58; }
+.achievement-card.unlocked { border-color: rgba(190,24,93,.24); box-shadow: 0 12px 24px rgba(190,24,93,.08); }
+body[data-theme="neon"] { --primary: #8b5cf6; --primary-dark: #5b21b6; --accent: #22d3ee; --surface: rgba(248,250,252,.78); background: radial-gradient(circle at 15% 10%, rgba(34,211,238,.28), transparent 32%), radial-gradient(circle at 85% 5%, rgba(236,72,153,.25), transparent 30%), #0f1027; }
+body[data-theme="neon"] .app-shell { background: linear-gradient(180deg, rgba(15,16,39,.86), rgba(49,20,74,.82)); }
+body[data-theme="neon"] .subtitle, body[data-theme="neon"] .field-help { color: rgba(255,255,255,.78); }
+body[data-theme="romantic"] { --primary: #f43f5e; --primary-dark: #be123c; --accent: #fb7185; background: radial-gradient(circle at 20% 10%, rgba(251,113,133,.28), transparent 30%), linear-gradient(135deg, #fff1f2, #ffe4e6); }
+body[data-theme="dark"] { --primary: #a855f7; --primary-dark: #7e22ce; --accent: #f472b6; --text: #f8fafc; --muted: rgba(248,250,252,.72); --surface: rgba(30,27,75,.78); background: radial-gradient(circle at 20% 10%, rgba(168,85,247,.25), transparent 30%), #0f0a1f; }
+body[data-theme="dark"] .app-shell { background: linear-gradient(180deg, rgba(15,10,31,.94), rgba(31,12,43,.94)); }
+body[data-theme="dark"] .hero-card, body[data-theme="dark"] .intro-panel, body[data-theme="dark"] .explain-panel, body[data-theme="dark"] .mode-card, body[data-theme="dark"] .mode-section { background: rgba(30,27,75,.78); border-color: rgba(244,114,182,.16); }
+body[data-theme="dark"] input, body[data-theme="dark"] select, body[data-theme="dark"] .number-cell, body[data-theme="dark"] .theme-chip { background: rgba(15,23,42,.82); color: #f8fafc; }
+body[data-theme="summer"] { --primary: #f59e0b; --primary-dark: #b45309; --accent: #06b6d4; background: radial-gradient(circle at 20% 10%, rgba(6,182,212,.23), transparent 30%), linear-gradient(135deg, #ecfeff, #fffbeb); }
+body[data-theme="summer"] .primary-button, body[data-theme="summer"] .yes-button { background: linear-gradient(135deg, #f59e0b, #f97316); }
+
+/* v5.2 · Modo Parejas */
+.pair-names label {
+  display: grid;
+  gap: 0.45rem;
+  font-weight: 800;
+  color: var(--text);
+}
+.pair-names label span {
+  font-size: 0.82rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.pair-game-panel .pair-options {
+  margin-top: 1rem;
+}
+.pair-feedback {
+  margin-top: 1rem;
+}
+.pair-round-result,
+.pair-final-card {
+  padding: 1rem;
+  border-radius: 1.2rem;
+  background: rgba(255,255,255,0.78);
+  border: 1px solid rgba(255,255,255,0.78);
+  box-shadow: var(--shadow-soft);
+  text-align: center;
+}
+.pair-round-result.hit strong { color: #15803d; }
+.pair-round-result.miss strong { color: #be123c; }
+.pair-round-result p,
+.pair-final-card p {
+  margin: 0.45rem 0 0.9rem;
+  color: var(--muted);
+}
+.pair-final-card strong {
+  font-size: 1.25rem;
+  color: var(--accent-strong);
+}
+
+
+/* =========================================================
+   TeLoAdivino v6.0 · UI Redesign
+   - Inicio más tipo portada
+   - Centro de juegos ordenado por categorías
+   - Barra inferior fija
+   - Tarjetas y resultados más modernos
+   ========================================================= */
+:root {
+  --app-radius: 38px;
+  --surface: rgba(255,255,255,.78);
+  --surface-strong: rgba(255,255,255,.92);
+  --glass-line: rgba(255,255,255,.50);
+  --category-compat: #ec4899;
+  --category-vibe: #7c3aed;
+  --category-group: #f97316;
+  --category-online: #06b6d4;
+  --category-success: #22c55e;
+  --category-warning: #f59e0b;
+}
+
+body {
+  padding: 14px;
+  background:
+    radial-gradient(circle at 14% 10%, rgba(236,72,153,.42), transparent 24rem),
+    radial-gradient(circle at 84% 20%, rgba(124,58,237,.34), transparent 22rem),
+    radial-gradient(circle at 50% 90%, rgba(249,115,22,.25), transparent 28rem),
+    linear-gradient(145deg, #160717 0%, #2a0d2a 38%, #14091f 100%);
+}
+
+body[data-theme="summer"] {
+  background:
+    radial-gradient(circle at 20% 14%, rgba(251,191,36,.44), transparent 24rem),
+    radial-gradient(circle at 80% 24%, rgba(14,165,233,.30), transparent 22rem),
+    linear-gradient(145deg, #fff7ed, #fef3c7 46%, #ecfeff);
+}
+
+.app-shell {
+  width: min(460px, 100%);
+  min-height: min(900px, calc(100vh - 28px));
+  border-radius: var(--app-radius);
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.88), rgba(255,244,250,.78)),
+    radial-gradient(circle at top, rgba(236,72,153,.10), transparent 360px);
+  border: 1px solid rgba(255,255,255,.62);
+  box-shadow: 0 28px 90px rgba(0,0,0,.30);
+}
+
+body[data-theme="dark"] .app-shell,
+body[data-theme="neon"] .app-shell {
+  background:
+    linear-gradient(180deg, rgba(18,8,28,.90), rgba(40,12,42,.86)),
+    radial-gradient(circle at top, rgba(236,72,153,.22), transparent 360px);
+  border-color: rgba(255,255,255,.12);
+}
+
+.screen {
+  padding: 24px 22px 96px;
+}
+
+.hero-card {
+  min-height: calc(100vh - 132px);
+  justify-content: flex-start;
+  padding-top: 28px;
+}
+
+.hero-card::before {
+  content: "";
+  position: absolute;
+  inset: -18px -8px auto -8px;
+  height: 370px;
+  border-radius: 0 0 42px 42px;
+  background:
+    linear-gradient(135deg, rgba(236,72,153,.22), rgba(124,58,237,.16)),
+    radial-gradient(circle at 80% 12%, rgba(255,255,255,.46), transparent 10rem);
+  z-index: -1;
+}
+
+.hero-card .eyebrow {
+  align-self: flex-start;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: rgba(255,255,255,.64);
+  border: 1px solid rgba(255,255,255,.72);
+}
+
+h1 {
+  font-size: clamp(56px, 16vw, 86px);
+  letter-spacing: -.075em;
+  text-shadow: 0 20px 50px rgba(122,20,76,.13);
+}
+
+.subtitle {
+  font-size: 16px;
+}
+
+.hero-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: -4px 0 4px;
+}
+
+.hero-badges span {
+  padding: 9px 11px;
+  border-radius: 999px;
+  background: rgba(255,255,255,.70);
+  border: 1px solid rgba(255,255,255,.85);
+  color: var(--primary-dark);
+  font-weight: 900;
+  font-size: 13px;
+  box-shadow: 0 10px 24px rgba(122,20,76,.08);
+}
+
+.magic-hat {
+  height: 184px;
+  margin: 0;
+  transform: scale(.94);
+}
+
+.primary-button, .secondary-button, .yes-button, .no-button {
+  min-height: 58px;
+  letter-spacing: -.01em;
+}
+
+.primary-button {
+  background: linear-gradient(135deg, #fb7185 0%, #ec4899 48%, #8b5cf6 100%);
+  box-shadow: 0 18px 42px rgba(190,24,93,.30);
+}
+
+.secondary-button {
+  background: rgba(255,255,255,.70);
+  backdrop-filter: blur(10px);
+}
+
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  padding: 4px 0 8px;
+  margin-bottom: 14px;
+  backdrop-filter: blur(16px);
+}
+
+.step-pill {
+  background: rgba(255,255,255,.76);
+  color: var(--primary-dark);
+  border: 1px solid rgba(255,255,255,.82);
+  box-shadow: 0 12px 30px rgba(122,20,76,.10);
+}
+
+.icon-button {
+  background: rgba(255,255,255,.72);
+  border: 1px solid rgba(255,255,255,.80);
+}
+
+.section-heading {
+  text-align: left;
+  margin: 0 0 18px;
+}
+
+.section-heading h2 {
+  font-size: clamp(36px, 10vw, 54px);
+}
+
+.mode-section {
+  margin: 0 0 22px;
+}
+
+.mode-section-title {
+  position: sticky;
+  top: 70px;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border-radius: 18px;
+  background: rgba(255,255,255,.66);
+  border: 1px solid rgba(255,255,255,.72);
+  backdrop-filter: blur(14px);
+  box-shadow: 0 12px 24px rgba(122,20,76,.06);
+  color: var(--primary-dark);
+}
+
+.mode-grid.compact {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+
+.mode-card {
+  position: relative;
+  min-height: 112px;
+  overflow: hidden;
+  border-radius: 28px;
+  padding: 18px;
+  background: var(--surface-strong);
+  border: 1px solid rgba(255,255,255,.86);
+  box-shadow: 0 18px 48px rgba(122,20,76,.11);
+  transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+}
+
+.mode-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 24px 58px rgba(122,20,76,.16);
+}
+
+.mode-card::after {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 6px;
+  background: var(--category-compat);
+  border-radius: 28px 0 0 28px;
+}
+
+.mode-card[data-mode="number"]::after,
+.mode-card[data-mode="birthday"]::after { background: var(--category-warning); }
+.mode-card[data-mode="compatibility"]::after,
+.mode-card[data-mode="pair"]::after { background: var(--category-compat); }
+.mode-card[data-mode="vibe"]::after { background: var(--category-vibe); }
+.mode-card[data-mode="online"]::after { background: var(--category-online); }
+.mode-card[data-mode="bottle"]::after,
+.mode-card[data-mode="truth"]::after { background: var(--category-group); }
+.mode-card[data-mode="likely"]::after { background: var(--category-success); }
+
+.mode-card .mode-icon {
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.80), 0 10px 24px rgba(122,20,76,.10);
+}
+
+.mode-card[data-mode="compatibility"] .mode-icon,
+.mode-card[data-mode="pair"] .mode-icon { background: linear-gradient(135deg, #ffe4ef, #f5d0fe); }
+.mode-card[data-mode="vibe"] .mode-icon { background: linear-gradient(135deg, #e0e7ff, #f3e8ff); }
+.mode-card[data-mode="online"] .mode-icon { background: linear-gradient(135deg, #cffafe, #dbeafe); }
+.mode-card[data-mode="bottle"] .mode-icon,
+.mode-card[data-mode="truth"] .mode-icon { background: linear-gradient(135deg, #ffedd5, #fee2e2); }
+.mode-card[data-mode="likely"] .mode-icon { background: linear-gradient(135deg, #dcfce7, #fef3c7); }
+
+.online-card {
+  background:
+    linear-gradient(135deg, rgba(207,250,254,.95), rgba(255,255,255,.90));
+}
+
+.mode-card em {
+  font-style: normal;
+  margin-left: 5px;
+  padding: 3px 7px;
+  border-radius: 999px;
+  font-size: 11px;
+  color: white;
+  background: var(--category-online);
+}
+
+.utility-section {
+  padding: 14px;
+  border-radius: 28px;
+  background: rgba(255,255,255,.54);
+  border: 1px solid rgba(255,255,255,.70);
+}
+
+.theme-picker {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+
+.theme-chip {
+  white-space: nowrap;
+  border-radius: 999px;
+  padding: 10px 14px;
+  background: rgba(255,255,255,.70);
+  color: var(--primary-dark);
+  font-weight: 900;
+  border: 1px solid rgba(255,255,255,.8);
+}
+
+.theme-chip.active {
+  color: white;
+  background: linear-gradient(135deg, #ec4899, #8b5cf6);
+}
+
+.mode-actions-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.small-action {
+  min-height: 50px;
+  font-size: 14px;
+}
+
+.intro-panel,
+.compat-setup-panel,
+.explain-panel,
+.result-card {
+  min-height: auto;
+  background: rgba(255,255,255,.54);
+  border: 1px solid rgba(255,255,255,.78);
+  border-radius: 32px;
+  padding: 22px;
+  box-shadow: 0 18px 50px rgba(122,20,76,.10);
+}
+
+.intro-panel {
+  margin-top: 12px;
+}
+
+.play-card,
+.setup-block,
+.reading-card,
+.match-board,
+.history-item,
+.achievement-card,
+.truth-card,
+.bottle-card,
+.likely-card,
+.pair-card {
+  border-radius: 28px !important;
+  border: 1px solid rgba(255,255,255,.78) !important;
+  background: rgba(255,255,255,.78) !important;
+  box-shadow: 0 18px 46px rgba(122,20,76,.09) !important;
+}
+
+.result-card {
+  align-items: stretch;
+  text-align: center;
+  gap: 14px;
+}
+
+.result-number {
+  width: 176px;
+  min-height: 176px;
+  border-radius: 999px;
+  background:
+    radial-gradient(circle at 50% 50%, rgba(255,255,255,.95), rgba(255,255,255,.74)),
+    conic-gradient(from 180deg, #ec4899, #8b5cf6, #f97316, #ec4899);
+  outline: 10px solid rgba(255,255,255,.55);
+  color: #be185d;
+  box-shadow: 0 22px 58px rgba(122,20,76,.18);
+}
+
+.result-number.compatibility-result {
+  width: 190px;
+  min-height: 150px;
+  border-radius: 44px;
+}
+
+.confetti::before {
+  opacity: .75;
+  filter: drop-shadow(0 8px 12px rgba(122,20,76,.10));
+}
+
+.bottom-nav {
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  bottom: 14px;
+  z-index: 200;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  padding: 8px;
+  border-radius: 28px;
+  background: rgba(255,255,255,.76);
+  border: 1px solid rgba(255,255,255,.86);
+  box-shadow: 0 18px 54px rgba(39,9,33,.22);
+  backdrop-filter: blur(18px);
+}
+
+.bottom-nav-item {
+  display: grid;
+  place-items: center;
+  gap: 2px;
+  min-height: 54px;
+  border-radius: 20px;
+  color: var(--muted);
+  background: transparent;
+  font-weight: 1000;
+}
+
+.bottom-nav-item span { font-size: 20px; line-height: 1; }
+.bottom-nav-item small { font-size: 11px; line-height: 1; }
+.bottom-nav-item.active {
+  color: white;
+  background: linear-gradient(135deg, #ec4899, #8b5cf6);
+  box-shadow: 0 12px 26px rgba(190,24,93,.24);
+}
+
+body[data-theme="dark"] .bottom-nav,
+body[data-theme="neon"] .bottom-nav,
+body[data-theme="dark"] .mode-section-title,
+body[data-theme="neon"] .mode-section-title {
+  background: rgba(18,8,28,.72);
+  border-color: rgba(255,255,255,.12);
+}
+
+body[data-theme="dark"] .mode-card,
+body[data-theme="neon"] .mode-card,
+body[data-theme="dark"] .intro-panel,
+body[data-theme="neon"] .intro-panel,
+body[data-theme="dark"] .compat-setup-panel,
+body[data-theme="neon"] .compat-setup-panel,
+body[data-theme="dark"] .explain-panel,
+body[data-theme="neon"] .explain-panel,
+body[data-theme="dark"] .result-card,
+body[data-theme="neon"] .result-card {
+  background: rgba(255,255,255,.08) !important;
+  border-color: rgba(255,255,255,.12) !important;
+  color: #fff;
+}
+
+body[data-theme="dark"] .mode-card strong,
+body[data-theme="neon"] .mode-card strong,
+body[data-theme="dark"] h1,
+body[data-theme="dark"] h2,
+body[data-theme="neon"] h1,
+body[data-theme="neon"] h2,
+body[data-theme="dark"] .mode-section-title,
+body[data-theme="neon"] .mode-section-title {
+  color: #fff;
+}
+
+@media (min-width: 431px) {
+  .app-shell { max-height: calc(100vh - 28px); }
+  .screen.active { overflow-y: auto; }
+}
+
+@media (max-width: 380px) {
+  .bottom-nav { left: 8px; right: 8px; bottom: 8px; }
+  .bottom-nav-item { min-height: 50px; border-radius: 17px; }
+  .screen { padding-bottom: 86px; }
+  .hero-badges span { font-size: 12px; padding: 8px 10px; }
+  .mode-card { grid-template-columns: 52px 1fr; padding: 16px; }
+  .mode-card .mode-icon { width: 52px; height: 52px; font-size: 26px; }
+}
+
+/* v6.0.1 - Hotfix scroll global
+   Corrige pantallas largas donde el rediseño dejaba contenido fuera de vista. */
+html {
+  min-height: 100%;
+  height: auto;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+body {
+  min-height: 100vh;
+  height: auto;
+  overflow-x: hidden;
+  overflow-y: auto;
+  align-items: start;
+  place-items: start center;
+}
+
+.app-shell {
+  height: auto;
+  min-height: min(900px, calc(100vh - 28px));
+  overflow: visible;
+}
+
+.screen {
+  min-height: auto;
+  height: auto;
+  overflow: visible;
+  padding-bottom: 122px;
+}
+
+.screen.active {
+  min-height: auto;
+}
+
+.hero-card,
+.result-card,
+.explain-panel,
+.intro-panel,
+.compat-setup-panel {
+  min-height: auto;
+}
+
+.hero-card {
+  min-height: calc(100vh - 132px);
+}
+
+.bottom-nav {
+  position: fixed;
+  left: 50%;
+  right: auto;
+  bottom: max(14px, env(safe-area-inset-bottom));
+  width: min(432px, calc(100vw - 28px));
+  transform: translateX(-50%);
+}
+
+@media (max-width: 520px) {
+  body {
+    padding: 0;
+    display: block;
+  }
+
+  .app-shell {
+    width: 100%;
+    min-height: 100vh;
+    border-radius: 0;
+  }
+
+  .screen {
+    padding-bottom: 126px;
+  }
+
+  .bottom-nav {
+    width: calc(100vw - 20px);
+    bottom: max(10px, env(safe-area-inset-bottom));
+  }
+}
+
+/* v6.0.2 - Hotfix barra inferior con scroll
+   La barra inferior deja de estar fija al viewport. Ahora forma parte del flujo
+   de la pantalla y se mueve junto con el scroll, evitando tapar contenido. */
+.screen {
+  padding-bottom: 32px !important;
+}
+
+.bottom-nav {
+  position: relative !important;
+  left: auto !important;
+  right: auto !important;
+  bottom: auto !important;
+  width: auto !important;
+  transform: none !important;
+  margin: 18px 18px calc(18px + env(safe-area-inset-bottom)) !important;
+  z-index: 20 !important;
+}
+
+@media (max-width: 520px) {
+  .screen {
+    padding-bottom: 32px !important;
+  }
+
+  .bottom-nav {
+    width: auto !important;
+    margin: 14px 12px calc(14px + env(safe-area-inset-bottom)) !important;
+  }
+}
+
+/* v6.0.3 - Hotfix definitivo: barra inferior dentro del scroll
+   La navegación queda en el flujo normal del documento. No usa fixed, sticky ni absolute. */
+html,
+body {
+  min-height: 100%;
+  height: auto !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch;
+}
+
+body {
+  display: block !important;
+  place-items: unset !important;
+  align-items: unset !important;
+  justify-items: unset !important;
+  padding: 14px !important;
+}
+
+.app-shell {
+  position: relative !important;
+  height: auto !important;
+  min-height: calc(100vh - 28px) !important;
+  max-height: none !important;
+  overflow: visible !important;
+  margin: 0 auto !important;
+}
+
+.screen,
+.screen.active {
+  height: auto !important;
+  min-height: auto !important;
+  max-height: none !important;
+  overflow: visible !important;
+  padding-bottom: 28px !important;
+}
+
+.hero-card {
+  min-height: auto !important;
+}
+
+.bottom-nav {
+  position: static !important;
+  inset: auto !important;
+  left: auto !important;
+  right: auto !important;
+  top: auto !important;
+  bottom: auto !important;
+  width: auto !important;
+  max-width: none !important;
+  transform: none !important;
+  margin: 16px 18px calc(22px + env(safe-area-inset-bottom)) !important;
+  z-index: 1 !important;
+}
+
+@media (min-width: 431px) {
+  .app-shell { max-height: none !important; }
+  .screen.active { overflow: visible !important; }
+}
+
+@media (max-width: 520px) {
+  body { padding: 0 !important; }
+  .app-shell {
+    width: 100% !important;
+    min-height: 100vh !important;
+    border-radius: 0 !important;
+  }
+  .bottom-nav {
+    margin: 14px 12px calc(18px + env(safe-area-inset-bottom)) !important;
+  }
+}
+
+/* v6.0.4 - Fix real de navegación: el scroll ocurre dentro de la app.
+   La barra inferior queda en el flujo normal, después del contenido activo,
+   por lo que sube/baja con el desplazamiento y nunca queda pegada al viewport. */
+html,
+body {
+  height: 100% !important;
+  min-height: 100% !important;
+  overflow: hidden !important;
+}
+
+body {
+  display: flex !important;
+  justify-content: center !important;
+  align-items: stretch !important;
+  padding: 14px !important;
+}
+
+.app-shell {
+  position: relative !important;
+  display: flex !important;
+  flex-direction: column !important;
+  width: min(460px, 100%) !important;
+  height: calc(100vh - 28px) !important;
+  height: calc(100dvh - 28px) !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch !important;
+  margin: 0 auto !important;
+}
+
+.screen,
+.screen.active {
+  flex: 0 0 auto !important;
+  width: 100% !important;
+  height: auto !important;
+  min-height: auto !important;
+  max-height: none !important;
+  overflow: visible !important;
+  padding-bottom: 28px !important;
+}
+
+.screen.active {
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.bottom-nav {
+  position: static !important;
+  flex: 0 0 auto !important;
+  inset: auto !important;
+  left: auto !important;
+  right: auto !important;
+  top: auto !important;
+  bottom: auto !important;
+  width: auto !important;
+  max-width: none !important;
+  transform: none !important;
+  margin: 8px 18px calc(22px + env(safe-area-inset-bottom)) !important;
+  z-index: 1 !important;
+}
+
+@media (max-width: 520px) {
+  body {
+    padding: 0 !important;
+  }
+
+  .app-shell {
+    width: 100% !important;
+    height: 100vh !important;
+    height: 100dvh !important;
+    border-radius: 0 !important;
+  }
+
+  .bottom-nav {
+    margin: 8px 12px calc(18px + env(safe-area-inset-bottom)) !important;
+  }
+}
+
+
+/* v6.0.5 - Fix definitivo barra inferior: la barra vive dentro de la pantalla activa.
+   JS la mueve al final del contenido visible; por eso siempre aparece después de toda la información
+   y se desplaza junto con el scroll real de la app. */
+html,
+body {
+  height: 100% !important;
+  min-height: 100% !important;
+  overflow: hidden !important;
+}
+
+body {
+  display: flex !important;
+  justify-content: center !important;
+  align-items: stretch !important;
+  padding: 14px !important;
+}
+
+.app-shell {
+  position: relative !important;
+  display: block !important;
+  width: min(460px, 100%) !important;
+  height: calc(100vh - 28px) !important;
+  height: calc(100dvh - 28px) !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch !important;
+  margin: 0 auto !important;
+}
+
+.screen,
+.screen.active {
+  width: 100% !important;
+  height: auto !important;
+  min-height: auto !important;
+  max-height: none !important;
+  overflow: visible !important;
+  padding-bottom: 18px !important;
+}
+
+.screen.active {
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+/* El home usa portada alta, pero no debe empujar la barra sobre las tarjetas. */
+.hero-card {
+  min-height: auto !important;
+}
+
+.bottom-nav {
+  position: static !important;
+  display: grid !important;
+  inset: auto !important;
+  left: auto !important;
+  right: auto !important;
+  top: auto !important;
+  bottom: auto !important;
+  width: auto !important;
+  max-width: none !important;
+  transform: none !important;
+  margin: 18px 0 calc(20px + env(safe-area-inset-bottom)) !important;
+  z-index: 1 !important;
+  flex: 0 0 auto !important;
+}
+
+@media (max-width: 520px) {
+  body { padding: 0 !important; }
+  .app-shell {
+    width: 100% !important;
+    height: 100vh !important;
+    height: 100dvh !important;
+    border-radius: 0 !important;
+  }
+  .screen { padding-left: 20px !important; padding-right: 20px !important; }
+  .bottom-nav { margin: 16px 0 calc(18px + env(safe-area-inset-bottom)) !important; }
+}
+
+
+/* v6.0.6 - Revisión completa del problema de scroll y barra inferior
+   Diagnóstico:
+   - Las versiones anteriores acumularon reglas contradictorias: absolute, fixed, static, overflow hidden y scroll interno.
+   - Eso hacía que la barra inferior se comportara como overlay fijo en algunas cargas/cachés.
+   Corrección:
+   - El documento completo vuelve a ser el contenedor de scroll.
+   - .app-shell ya no fuerza altura fija ni overflow interno.
+   - .bottom-nav queda en flujo normal, al final del contenido visible.
+*/
+html,
+body {
+  height: auto !important;
+  min-height: 100% !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch !important;
+}
+
+body {
+  display: block !important;
+  padding: 14px !important;
+}
+
+.app-shell {
+  position: relative !important;
+  display: block !important;
+  width: min(460px, 100%) !important;
+  min-height: calc(100dvh - 28px) !important;
+  height: auto !important;
+  max-height: none !important;
+  overflow: visible !important;
+  margin: 0 auto !important;
+}
+
+.screen:not(.active) {
+  display: none !important;
+}
+
+.screen,
+.screen.active {
+  width: 100% !important;
+  min-height: auto !important;
+  height: auto !important;
+  max-height: none !important;
+  overflow: visible !important;
+  padding-bottom: 18px !important;
+}
+
+.screen.active {
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.hero-card,
+.result-card,
+.explain-panel,
+.intro-panel,
+.compat-setup-panel {
+  min-height: auto !important;
+}
+
+/* La barra inferior NO es fixed/sticky/absolute. Debe desplazarse con el contenido. */
+.bottom-nav {
+  position: static !important;
+  display: grid !important;
+  inset: auto !important;
+  left: auto !important;
+  right: auto !important;
+  top: auto !important;
+  bottom: auto !important;
+  width: auto !important;
+  max-width: none !important;
+  transform: none !important;
+  margin: 16px 18px calc(22px + env(safe-area-inset-bottom)) !important;
+  z-index: 1 !important;
+  flex: 0 0 auto !important;
+}
+
+@media (max-width: 520px) {
+  body { padding: 0 !important; }
+  .app-shell {
+    width: 100% !important;
+    min-height: 100dvh !important;
+    border-radius: 0 !important;
+  }
+  .screen { padding-left: 20px !important; padding-right: 20px !important; }
+  .bottom-nav { margin: 16px 12px calc(18px + env(safe-area-inset-bottom)) !important; }
+}
