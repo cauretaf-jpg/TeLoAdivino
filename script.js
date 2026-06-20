@@ -1767,8 +1767,22 @@ function getCurrentParticipant() {
 }
 
 function getActiveOnlineParticipants() {
+  // Participantes reales conectados desde sus celulares.
+  // Se usa principalmente en Compatibilidad, porque cada persona debe responder desde su propio dispositivo.
   return (currentRoom?.participants || []).filter(participant => {
     if ((participant.role || '').toLowerCase() === 'manual') return false;
+    if (!participant.lastSeen) return true;
+    return Date.now() - Number(participant.lastSeen) < 10 * 60 * 1000;
+  });
+}
+
+function getPlayableRoomParticipants() {
+  // Participantes disponibles para juegos de grupo como La Botellita y Verdad o Reto.
+  // Aquí sí contamos participantes manuales, porque esos juegos pueden jugarse desde el celular del anfitrión
+  // aunque no todos hayan entrado por QR.
+  return (currentRoom?.participants || []).filter(participant => {
+    if (!participant?.name) return false;
+    if ((participant.role || '').toLowerCase() === 'manual') return true;
     if (!participant.lastSeen) return true;
     return Date.now() - Number(participant.lastSeen) < 10 * 60 * 1000;
   });
@@ -1784,19 +1798,23 @@ function updateOnlineStartControls() {
   const bottleToggle = document.getElementById('onlineBottlePhysicalToggle');
   if (!button || !hint) return;
   const activeParticipants = getActiveOnlineParticipants();
+  const playableParticipants = getPlayableRoomParticipants();
   const ownId = getParticipantId();
   const isHost = !currentRoom?.hostId || currentRoom.hostId === ownId;
-  const canStart = Boolean(firebaseOnline && currentRoom?.code && activeParticipants.length >= 2 && isHost && currentRoom.status === 'lobby');
-  button.disabled = !canStart;
-  if (bottleButton) bottleButton.disabled = !canStart;
-  if (truthButton) truthButton.disabled = !canStart;
+  const baseCanStart = Boolean(firebaseOnline && currentRoom?.code && isHost && currentRoom.status === 'lobby');
+  const canStartCompatibility = baseCanStart && activeParticipants.length >= 2;
+  const canStartPartyGame = baseCanStart && playableParticipants.length >= 2;
+  button.disabled = !canStartCompatibility;
+  if (bottleButton) bottleButton.disabled = !canStartPartyGame;
+  if (truthButton) truthButton.disabled = !canStartPartyGame;
   if (select) select.disabled = currentRoom?.status !== 'lobby';
   if (bottleSelect) bottleSelect.disabled = currentRoom?.status !== 'lobby';
   if (bottleToggle) bottleToggle.disabled = currentRoom?.status !== 'lobby';
   if (!firebaseOnline) hint.textContent = 'Firebase no está conectado. Revisa internet y vuelve a cargar.';
   else if (!isHost) hint.textContent = 'Solo la persona anfitriona puede iniciar el juego.';
-  else if (activeParticipants.length < 2) hint.textContent = 'Necesitas al menos 2 participantes conectados desde sus celulares.';
   else if (currentRoom?.status !== 'lobby') hint.textContent = currentRoom?.status === 'finished' ? 'La sala fue finalizada.' : 'La partida ya está iniciada.';
+  else if (activeParticipants.length < 2 && playableParticipants.length < 2) hint.textContent = 'Necesitas al menos 2 participantes. Pueden entrar por QR o agregarse manualmente para Botellita/Verdad o Reto.';
+  else if (activeParticipants.length < 2) hint.textContent = 'Botellita y Verdad o Reto ya pueden iniciar. Compatibilidad requiere 2 personas conectadas por QR.';
   else hint.textContent = 'Cuando estén todas las personas, inicia Compatibilidad mágica, La Botellita o Verdad o Reto online.';
 }
 
@@ -1853,7 +1871,7 @@ async function startOnlineCompatibilityGame() {
   }
   const activeParticipants = getActiveOnlineParticipants();
   if (activeParticipants.length < 2) {
-    alert('Necesitas al menos 2 participantes conectados desde sus celulares.');
+    alert('Necesitas al menos 2 participantes conectados desde sus celulares para Compatibilidad mágica.');
     return;
   }
   const ownId = getParticipantId();
@@ -2448,9 +2466,9 @@ async function startOnlineBottleGame() {
     alert('Firebase no está conectado. Recarga la página e intenta nuevamente.');
     return;
   }
-  const activeParticipants = getActiveOnlineParticipants();
-  if (activeParticipants.length < 2) {
-    alert('Necesitas al menos 2 participantes conectados desde sus celulares.');
+  const playableParticipants = getPlayableRoomParticipants();
+  if (playableParticipants.length < 2) {
+    alert('Necesitas al menos 2 participantes en la sala. Pueden entrar por QR o agregarse manualmente.');
     return;
   }
   const ownId = getParticipantId();
@@ -2538,10 +2556,10 @@ function pickOneOnlineParticipant(list, excludeId = '') {
 
 async function spinOnlineBottle() {
   if (!firebaseOnline || !currentRoom?.code || currentRoom.game?.type !== 'bottle') return;
-  const activeParticipants = getActiveOnlineParticipants();
+  const playableParticipants = getPlayableRoomParticipants();
   const game = currentRoom.game;
   const pending = game.pendingSelection || null;
-  const selected = pickOneOnlineParticipant(activeParticipants, pending?.id || '');
+  const selected = pickOneOnlineParticipant(playableParticipants, pending?.id || '');
   if (!selected) return;
 
   try {
@@ -3045,9 +3063,9 @@ async function startOnlineTruthGame() {
     alert('Firebase no está conectado. Recarga la página e intenta nuevamente.');
     return;
   }
-  const activeParticipants = getActiveOnlineParticipants();
-  if (activeParticipants.length < 2) {
-    alert('Necesitas al menos 2 participantes conectados desde sus celulares.');
+  const playableParticipants = getPlayableRoomParticipants();
+  if (playableParticipants.length < 2) {
+    alert('Necesitas al menos 2 participantes en la sala. Pueden entrar por QR o agregarse manualmente.');
     return;
   }
   const ownId = getParticipantId();
@@ -3104,8 +3122,8 @@ function renderOnlineTruth(force = false) {
 
 async function playOnlineTruthTurn(kind = 'random') {
   if (!firebaseOnline || !currentRoom?.code || currentRoom.game?.type !== 'truth') return;
-  const activeParticipants = getActiveOnlineParticipants();
-  const selected = randomItem(activeParticipants);
+  const playableParticipants = getPlayableRoomParticipants();
+  const selected = randomItem(playableParticipants);
   if (!selected) return;
   const card = getTruthCard(kind, currentRoom.game.intensity || 'suave');
   const round = { player: { id: selected.id, name: selected.name }, card, intensity: currentRoom.game.intensity || 'suave', createdAt: Date.now() };

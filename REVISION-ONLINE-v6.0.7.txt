@@ -1,0 +1,21 @@
+TeLoAdivino v6.0.7 - Revisión juegos online
+
+Diagnóstico:
+1. El bloqueo principal estaba en la lógica de inicio online.
+2. La función getActiveOnlineParticipants() excluía participantes manuales. Eso es correcto para Compatibilidad mágica, porque cada persona debe responder desde su celular.
+3. Pero La Botellita y Verdad o Reto sí pueden usar participantes agregados manualmente desde el anfitrión. Al usar la misma validación para todos los juegos, esos botones podían quedar deshabilitados o no iniciar aunque hubiera nombres cargados.
+
+Cambios aplicados:
+- Se agregó getPlayableRoomParticipants(), que incluye participantes conectados por QR y participantes manuales.
+- Compatibilidad mágica sigue usando getActiveOnlineParticipants(), porque requiere respuestas individuales por celular.
+- La Botellita y Verdad o Reto ahora usan getPlayableRoomParticipants().
+- El panel del lobby ahora habilita cada botón por separado:
+  * Compatibilidad: mínimo 2 participantes conectados por QR.
+  * Botellita: mínimo 2 participantes conectados o manuales.
+  * Verdad o Reto: mínimo 2 participantes conectados o manuales.
+- Se actualizó el mensaje de ayuda para explicar cuándo cada juego puede iniciar.
+- Se actualizó el cache del service worker a v6.0.7.
+
+Notas:
+- Si la app instalada sigue mostrando comportamiento anterior, eliminar la PWA del celular o abrir con ?v=607.
+- Si Firebase muestra error de permisos, revisar que las reglas publicadas permitan escritura en rooms/$roomId/game.
